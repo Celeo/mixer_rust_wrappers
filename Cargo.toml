@@ -29,3 +29,7 @@ typed-builder = "0.3.0"
 [dependencies.ws]
 version = "0.9.0"
 features = ["ssl"]
+
+[dev-dependencies]
+mockito = "0.17.1"
+tempfile = "3.0.8"

@@ -8,7 +8,7 @@ pub struct Event {
     #[serde(rename = "type")]
     pub event_type: String,
     pub event: String,
-    pub data: HashMap<String, Value>,
+    pub data: Value,
 }
 
 impl fmt::Display for Event {
@@ -108,5 +108,40 @@ impl fmt::Display for StreamMessage {
             None => String::from("None"),
         };
         write!(f, "{} | {}", e, r)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Event, MixerError, Reply};
+    use serde_json::Value;
+    use std::convert::TryFrom;
+
+    #[test]
+    fn event_from_json() {
+        let text = r#"{"type":"event","event":"foobar","data": null}"#;
+        let json: Value = serde_json::from_str(&text).unwrap();
+        let event = Event::try_from(json).unwrap();
+
+        assert_eq!(event.event, "foobar");
+    }
+
+    #[test]
+    fn reply_from_json() {
+        let text = r#"{"type":"reply","id":40,"result":null,"error":null}"#;
+        let json: Value = serde_json::from_str(&text).unwrap();
+        let reply = Reply::try_from(json).unwrap();
+
+        assert_eq!(reply.id, 40);
+    }
+
+    #[test]
+    fn error_explain() {
+        let error = MixerError {
+            id: 4008,
+            message: String::new(),
+        };
+
+        assert_eq!(error.explain(), "Unknown packet type".to_owned());
     }
 }
