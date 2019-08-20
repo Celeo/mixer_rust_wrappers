@@ -27,9 +27,9 @@ impl MixerAPI {
     /// # Examples
     ///
     /// ```rust
-    /// use mixer_rs::MixerAPI;
+    /// use mixer_rust_wrappers::rest::MixerAPI;
     ///
-    /// let api = MixerAPI("abcd");
+    /// let api = MixerAPI::new("abcd");
     /// ```
     pub fn new(client_id: &str) -> Self {
         MixerAPI {
@@ -45,7 +45,7 @@ impl MixerAPI {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// let headers = self.headers();
     /// ```
     fn headers(&self) -> HeaderMap {
@@ -71,10 +71,8 @@ impl MixerAPI {
     ///
     /// # Examples
     ///
-    /// ```rust,no-run
-    /// use reqwest::Method;
-    ///
-    /// let text = api.query(Method::GET, "some/endpoint", &[])?;
+    /// ```rust,ignore
+    /// let text = api.query(Method::GET, "some/endpoint", &[]).unwrap();
     /// ```
     pub fn query<T: Serialize + ?Sized>(
         &self,

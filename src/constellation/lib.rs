@@ -129,7 +129,7 @@ impl ConstellationClient {
     ///
     /// # Examples
     ///
-    /// ```rust,no-run
+    /// ```rust,ignore
     /// let is_connected = client.check_connection();
     /// ```
     pub fn check_connection(&mut self) -> bool {
@@ -151,8 +151,8 @@ impl ConstellationClient {
     ///
     /// # Examples
     ///
-    /// ```rust,no-run
-    /// client.send_message("Hello world")?;
+    /// ```rust,ignore
+    /// client.send_message("Hello world").unwrap();
     /// ```
     pub fn send_raw_message(&mut self, message: &str) -> Result<(), Error> {
         if !self.check_connection() {
@@ -173,7 +173,7 @@ impl ConstellationClient {
     ///
     /// # Examples
     ///
-    /// ```rust,no-run
+    /// ```rust,ignore
     /// let method = client.create_method("some-method-name", &params);
     /// ```
     pub fn create_method(&mut self, method: &str, params: &HashMap<String, Value>) -> Method {
@@ -197,8 +197,8 @@ impl ConstellationClient {
     ///
     /// # Examples
     ///
-    /// ```rust,no-run
-    /// client.call_method("some-method-name", &params)?;
+    /// ```rust,ignore
+    /// client.call_method("some-method-name", &HashMap::new()).unwrap();
     /// ```
     pub fn call_method(
         &mut self,
@@ -220,7 +220,8 @@ impl ConstellationClient {
 /// # Examples
 ///
 /// ```rust,no-run
-/// let (client, receiver) = init_connection()?;
+/// # use mixer_rust_wrappers::constellation::lib::init_connection;
+/// let (client, receiver) = init_connection().unwrap();
 /// ```
 pub fn init_connection() -> Result<(ConstellationClient, Receiver<StreamMessage>), Error> {
     debug!("Setting up connection");
