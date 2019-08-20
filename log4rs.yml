@@ -8,7 +8,7 @@ root:
   appenders:
     - stdout
 loggers:
-  constellation_rs:
+  mixer_rust_wrappers:
     level: debug
-  constellation_driver:
+  driver:
     level: debug
