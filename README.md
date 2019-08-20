@@ -15,7 +15,6 @@ Rust wrappers for the Mixer APIs at https://dev.mixer.com/
 1. Enter the new directory
 1. Run `cargo build`
 
-
 ## Running
 
 ### Tests
@@ -25,3 +24,7 @@ Rust wrappers for the Mixer APIs at https://dev.mixer.com/
 ### As a program
 
 This project is a _library_, which means that it's intended to be used to assist in creating other programs instead of itself being ran.
+
+## Using
+
+TODO
