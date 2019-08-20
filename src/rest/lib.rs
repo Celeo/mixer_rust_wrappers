@@ -12,12 +12,12 @@ const BASE_URL: &str = "https://mixer.com/api/v1/";
 const TIMEOUT: u64 = 10;
 
 /// API wrapper around the Mixer REST API.
-pub struct MixerAPI {
+pub struct REST {
     client: Client,
     client_id: String,
 }
 
-impl MixerAPI {
+impl REST {
     /// Create a new API wrapper.
     ///
     /// # Arguments
@@ -27,12 +27,12 @@ impl MixerAPI {
     /// # Examples
     ///
     /// ```rust
-    /// use mixer_rust_wrappers::rest::MixerAPI;
+    /// use mixer_rust_wrappers::rest::REST;
     ///
-    /// let api = MixerAPI::new("abcd");
+    /// let api = REST::new("abcd");
     /// ```
     pub fn new(client_id: &str) -> Self {
-        MixerAPI {
+        REST {
             client: Client::builder()
                 .timeout(Duration::from_secs(TIMEOUT))
                 .build()
