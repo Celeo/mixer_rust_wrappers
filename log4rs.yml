@@ -1,0 +1,14 @@
+appenders:
+  stdout:
+    kind: console
+    encoder:
+      pattern: "{d} {h({l})} {m}{n}"
+root:
+  level: warn
+  appenders:
+    - stdout
+loggers:
+  constellation_rs:
+    level: debug
+  constellation_driver:
+    level: debug
