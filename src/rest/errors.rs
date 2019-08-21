@@ -1,5 +1,6 @@
 use failure::Fail;
 
+/// Error for receiving a non-20X response from an endpoint.
 #[derive(Debug, Fail, PartialEq)]
 #[fail(display = "An error occurred with error code {}.", _0)]
 pub struct BadHttpResponseError(pub u16);

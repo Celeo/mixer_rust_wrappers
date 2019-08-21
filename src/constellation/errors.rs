@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 lazy_static! {
+    /// Error messages for error codes; from the Mixer Dev docs
     pub static ref ERRORS: HashMap<u16, String> = {
         let mut m = HashMap::new();
         m.insert(
