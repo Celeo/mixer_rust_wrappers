@@ -11,8 +11,8 @@ use std::{
 };
 use url::Url;
 use ws::{
-    connect, CloseCode, Error as SocketError, Handler, Handshake, Message as SocketMessage,
-    Request, Result as WSResult, Sender as SocketSender,
+    connect as socket_connect, CloseCode, Error as SocketError, Handler, Handshake,
+    Message as SocketMessage, Request, Result as WSResult, Sender as SocketSender,
 };
 
 use super::models::{Event, Method, Reply, StreamMessage};
@@ -215,15 +215,59 @@ impl ConstellationClient {
 /// Create a connection to the Mixer Constellation websocket endpoint.
 ///
 /// Returns a tuple of the client you can use to send data to Constellation,
-/// and an MPSC Receiver used for getting data out of the socket.
+/// and an MPSC Receiver used for getting data out of the socket. This method
+/// utilizes threads so that it does not block; the program can continue
+/// running after calling this method.
+///
+/// Of the tuple that's returned, the first struct is the client that is
+/// used to send messages to Constellation. The second item is the MPSC
+/// receiver that is sent the replies and events back from the socket.
+/// Handling these structs is a task for the program.
 ///
 /// # Examples
 ///
+/// ## Simple method call
+///
 /// ```rust,no-run
-/// # use mixer_rust_wrappers::constellation::lib::init_connection;
-/// let (client, receiver) = init_connection().unwrap();
+/// # use mixer_rust_wrappers::constellation::lib::connect;
+/// let (client, receiver) = connect().unwrap();
 /// ```
-pub fn init_connection() -> Result<(ConstellationClient, Receiver<StreamMessage>), Error> {
+///
+/// ## Full program
+///
+/// ```rust,no-run
+/// use constellation_rs::{init_connection, models::StreamMessage};
+/// use log::info;
+/// use std::{collections::HashMap, sync::mpsc::Receiver, thread};
+///
+/// fn message_handler(receiver: Receiver<StreamMessage>) {
+///     loop {
+///         if let Ok(message) = receiver.try_recv() {
+///             info!("Got message: {}", message);
+///             if let Some(event) = message.event {
+///                 // ...
+///             }
+///             if let Some(reply) = message.reply {
+///                 // ...
+///             }
+///         }
+///     }
+/// }
+///
+/// fn main() {
+///     kankyo::load(false).expect("Could not load .env file");
+///     log4rs::init_file("log4rs.yml", Default::default()).unwrap();
+///     info!("Setting up");
+///     let (mut client, receiver) = init_connection().expect("Could not start client");
+///     thread::spawn(move || {
+///         message_handler(receiver);
+///     });
+///     client.call_method("ping", &HashMap::new()).unwrap();
+///     client.client_thread_handler.join().unwrap();
+/// }
+///
+/// ```
+pub fn connect() -> Result<(ConstellationClient, Receiver<StreamMessage>), Error> {
     debug!("Setting up connection");
     // create channels
     let (ws_send, ws_recv) = channel::<SocketSender>();
@@ -233,7 +277,7 @@ pub fn init_connection() -> Result<(ConstellationClient, Receiver<StreamMessage>
     // launch the socket connection in a new thread
     let client_handler = thread::spawn(move || {
         debug!("Starting connection");
-        connect("wss://constellation.mixer.com", |socket_out| {
+        socket_connect("wss://constellation.mixer.com", |socket_out| {
             let client = SocketClient::new(conn_send.clone(), msg_send.clone());
             // send the socket output struct through the corresponding channel
             ws_send
