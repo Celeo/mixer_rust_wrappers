@@ -23,7 +23,7 @@ Run tests with `cargo test`.
 
 ## Using
 
-TODO: crates.io link
+Add the [most recent version](https://crates.io/crates/mixer_wrappers) to your Cargo.toml and build.
 
 This library is split into 2 parts: a tiny convenience wrapper for the REST API, and a wrapper for the Constellation real-time API.
 
