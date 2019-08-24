@@ -77,7 +77,7 @@ impl REST {
     ///
     /// # Examples
     ///
-    /// ```rust,no-run
+    /// ```rust,no_run
     /// # use mixer_rust_wrappers::REST;
     /// # use reqwest::Method;
     /// let api = REST::new("");

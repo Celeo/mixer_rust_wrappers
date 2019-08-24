@@ -234,7 +234,7 @@ impl ConstellationClient {
 ///
 /// ## Simple method call
 ///
-/// ```rust,no-run
+/// ```rust,no_run
 /// # use mixer_rust_wrappers::constellation::connect;
 /// let (client, receiver) = connect().unwrap();
 /// ```
