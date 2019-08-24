@@ -10,7 +10,6 @@ use serde_json::Value;
 use std::{
     collections::HashMap,
     convert::TryFrom,
-    env,
     sync::mpsc::{channel, Receiver, Sender as ChanSender},
     thread::{self, JoinHandle},
 };
@@ -23,14 +22,20 @@ use ws::{
 use models::{Event, Method, Reply, StreamMessage};
 
 struct SocketClient {
+    client_id: String,
     connection_sender: ChanSender<bool>,
     message_sender: ChanSender<StreamMessage>,
 }
 
 impl SocketClient {
     /// Create a new low-level client.
-    fn new(connection_sender: ChanSender<bool>, message_sender: ChanSender<StreamMessage>) -> Self {
+    fn new(
+        client_id: &str,
+        connection_sender: ChanSender<bool>,
+        message_sender: ChanSender<StreamMessage>,
+    ) -> Self {
         SocketClient {
+            client_id: client_id.to_owned(),
             connection_sender,
             message_sender,
         }
@@ -40,12 +45,10 @@ impl SocketClient {
 impl Handler for SocketClient {
     /// Overrides the default request builder to pass in the client-id header.
     fn build_request(&mut self, url: &Url) -> WSResult<Request> {
-        let client_id =
-            env::var("CLIENT_ID").expect("Could not get CLIENT_ID environment variable");
         let mut req = Request::from_url(url)?;
         // the two required headers: client-id and x-is-bot
         req.headers_mut()
-            .push(("client-id".into(), client_id.into()));
+            .push(("client-id".into(), self.client_id.clone().into()));
         req.headers_mut().push(("x-is-bot".into(), "true".into()));
         Ok(req)
     }
@@ -230,18 +233,22 @@ impl ConstellationClient {
 /// receiver that is sent the replies and events back from the socket.
 /// Handling these structs is a task for the program.
 ///
+/// # Arguments
+///
+/// * `client_id` - your Mixer API client ID
+///
 /// # Examples
 ///
 /// ## Simple method call
 ///
 /// ```rust,no_run
 /// # use mixer_wrappers::constellation::connect;
-/// let (client, receiver) = connect().unwrap();
+/// let (client, receiver) = connect("aaaaaaaaaa").unwrap();
 /// ```
 ///
 /// ## Full program
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use mixer_wrappers::constellation::{connect, models::StreamMessage};
 /// use std::{collections::HashMap, sync::mpsc::Receiver, thread};
 ///
@@ -259,9 +266,7 @@ impl ConstellationClient {
 /// }
 ///
 /// fn main() {
-///     // populate the required environment variable from an '.env' file
-///     kankyo::load(false).expect("Could not load .env file");
-///     let (mut client, receiver) = connect().expect("Could not start client");
+///     let (mut client, receiver) = connect("aaaaaaaaaa").expect("Could not start client");
 ///     thread::spawn(move || {
 ///         message_handler(receiver);
 ///     });
@@ -269,7 +274,7 @@ impl ConstellationClient {
 ///     client.client_thread_handler.join().unwrap();
 /// }
 /// ```
-pub fn connect() -> Result<(ConstellationClient, Receiver<StreamMessage>), Error> {
+pub fn connect(client_id: &str) -> Result<(ConstellationClient, Receiver<StreamMessage>), Error> {
     debug!("Setting up connection");
     // create channels
     let (ws_send, ws_recv) = channel::<SocketSender>();
@@ -277,10 +282,11 @@ pub fn connect() -> Result<(ConstellationClient, Receiver<StreamMessage>), Error
     let (msg_send, msg_rev) = channel::<StreamMessage>();
 
     // launch the socket connection in a new thread
+    let client_id = client_id.to_owned();
     let client_handler = thread::spawn(move || {
         debug!("Starting connection");
         socket_connect("wss://constellation.mixer.com", |socket_out| {
-            let client = SocketClient::new(conn_send.clone(), msg_send.clone());
+            let client = SocketClient::new(&client_id, conn_send.clone(), msg_send.clone());
             // send the socket output struct through the corresponding channel
             ws_send
                 .send(socket_out)

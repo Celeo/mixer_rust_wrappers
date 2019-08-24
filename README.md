@@ -63,10 +63,10 @@ This is the more interesting part of the library. This wrapper makes it easy to 
 ```rust
 use mixer_wrappers::connect;
 
-let (mut client, receiver) = connect().unwrap();
+let (mut client, receiver) = connect("your_client_id_here").unwrap();
 ```
 
-Note that at this call, you'll need to have a 'CLIENT_ID' environment variable set, and that the `connect` method returns a Result, as expected.
+Note that the `connect` method returns a Result, as expected.
 
 You can see a full example of what do do with these variables in the docs.
 
