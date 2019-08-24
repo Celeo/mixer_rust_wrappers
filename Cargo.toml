@@ -32,4 +32,3 @@ features = ["ssl"]
 
 [dev-dependencies]
 mockito = "0.17.1"
-tempfile = "3.0.8"

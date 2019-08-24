@@ -6,7 +6,6 @@ use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
     Client, Method,
 };
-use serde::Serialize;
 use std::time::Duration;
 
 use errors::BadHttpResponseError;
@@ -81,27 +80,28 @@ impl REST {
     /// ```rust,no-run
     /// # use mixer_rust_wrappers::REST;
     /// # use reqwest::Method;
-    /// // let api = REST::new("");
-    /// // let text = api.query(Method::GET, "some/endpoint", &(), None).unwrap();
+    /// let api = REST::new("");
+    /// let text = api.query(Method::GET, "some/endpoint", None, None).unwrap();
     /// ```
-    pub fn query<P: Serialize + ?Sized>(
+    pub fn query(
         &self,
         method: Method,
         endpoint: &str,
-        params: &P,
+        params: Option<&[(&str, &str)]>,
         body: Option<&str>,
     ) -> Result<String, Error> {
         let endpoint = format!("{}/{}", self.base_url(), endpoint);
-        let builder = self
+        let mut builder = self
             .client
             .request(method, &endpoint)
-            .headers(self.headers())
-            .query(params);
-        let req = if body.is_some() {
-            builder.body(body.unwrap().to_owned()).build()?
-        } else {
-            builder.build()?
-        };
+            .headers(self.headers());
+        if params.is_some() {
+            builder = builder.query(params.unwrap());
+        }
+        if body.is_some() {
+            builder = builder.body(body.unwrap().to_owned());
+        }
+        let req = builder.build()?;
         let mut resp = self.client.execute(req)?;
         if !resp.status().is_success() {
             return Err(BadHttpResponseError(resp.status().as_u16()).into());
@@ -137,7 +137,7 @@ mod tests {
             .create();
         let rest = REST::new("foobar");
         let resp = rest
-            .query(Method::GET, "somewhere", &[("foo", "bar")], None)
+            .query(Method::GET, "somewhere", Some(&[("foo", "bar")]), None)
             .unwrap();
         assert_eq!(body, resp);
     }
@@ -150,7 +150,7 @@ mod tests {
             .with_body(body)
             .create();
         let rest = REST::new("foobar");
-        let resp = rest.query(Method::GET, "somewhere", &[("foo", "bar")], None);
+        let resp = rest.query(Method::GET, "somewhere", Some(&[("foo", "bar")]), None);
         assert_eq!(true, resp.is_err());
         let err = resp.unwrap_err();
         assert_eq!("BadHttpResponseError(501)", &format!("{:?}", err));
