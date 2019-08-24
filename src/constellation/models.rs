@@ -47,7 +47,7 @@ impl TryFrom<Value> for Event {
 /// This is how clients send data _to_ the socket.
 ///
 /// See https://dev.mixer.com/reference/constellation/methods
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Method {
     #[serde(rename = "type")]
     /// Always 'method'
@@ -68,7 +68,7 @@ impl fmt::Display for Method {
 }
 
 /// Error from Constellation
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct MixerError {
     /// Error's id
     pub id: u16,
@@ -135,28 +135,14 @@ pub struct StreamMessage {
     pub reply: Option<Reply>,
 }
 
-impl fmt::Display for StreamMessage {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let e = match &self.event {
-            Some(e) => format!("{}", e),
-            None => String::from("None"),
-        };
-        let r = match &self.reply {
-            Some(r) => format!("{}", r),
-            None => String::from("None"),
-        };
-        write!(f, "{} | {}", e, r)
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{Event, MixerError, Reply};
-    use serde_json::Value;
-    use std::convert::TryFrom;
+    use super::{Event, Method, MixerError, Reply};
+    use serde_json::{json, Value};
+    use std::{collections::HashMap, convert::TryFrom};
 
     #[test]
-    fn event_from_json() {
+    fn event_try_from_json() {
         let text = r#"{"type":"event","event":"foobar","data": null}"#;
         let json: Value = serde_json::from_str(&text).unwrap();
         let event = Event::try_from(json).unwrap();
@@ -165,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn reply_from_json() {
+    fn reply_try_from_json() {
         let text = r#"{"type":"reply","id":40,"result":null,"error":null}"#;
         let json: Value = serde_json::from_str(&text).unwrap();
         let reply = Reply::try_from(json).unwrap();
@@ -181,5 +167,47 @@ mod tests {
         };
 
         assert_eq!(error.explain(), "Unknown packet type".to_owned());
+    }
+
+    #[test]
+    fn event_from_json() {
+        let text = r#"{"type":"event","event":"hello","data":{}}"#;
+        let event: Event = serde_json::from_str(&text).unwrap();
+
+        assert_eq!("event", event.event_type);
+        assert_eq!("hello", event.event);
+        assert_eq!(Some(json!({})), event.data);
+
+        assert_eq!(text, format!("{}", event));
+    }
+
+    #[test]
+    fn reply_from_json() {
+        let text = r#"{"type":"reply","id":100,"result":{"foo":123},"error":null}"#;
+        let reply: Reply = serde_json::from_str(&text).unwrap();
+
+        assert_eq!("reply", reply.reply_type);
+        assert_eq!(100, reply.id);
+        let mut map = HashMap::new();
+        map.insert(String::from("foo"), json!(123));
+        assert_eq!(Some(map), reply.result);
+        assert_eq!(None, reply.error);
+
+        assert_eq!(text, format!("{}", reply));
+    }
+
+    #[test]
+    fn method_display() {
+        let mut map = HashMap::new();
+        map.insert(String::from("foo"), json!("bar"));
+        let method = Method {
+            method_type: String::from("method"),
+            method: String::from("something"),
+            params: map,
+            id: 100,
+        };
+        let as_text = format!("{}", method);
+        let method_check = serde_json::from_str(&as_text).unwrap();
+        assert_eq!(method, method_check);
     }
 }

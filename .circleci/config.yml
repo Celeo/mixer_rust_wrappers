@@ -8,6 +8,8 @@ jobs:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
     steps:
       - checkout
+      - restore_cache:
+          key: project-cache
       - run:
           name: Install components
           command: |
@@ -26,3 +28,8 @@ jobs:
       - run:
           name: Test
           command: cargo test
+      - save_cache:
+          key: project-cache
+          paths:
+            - "~/.cargo"
+            - "./target"
