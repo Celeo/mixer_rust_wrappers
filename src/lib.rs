@@ -14,5 +14,5 @@ pub mod constellation;
 /// REST API
 pub mod rest;
 
-pub use constellation::ConstellationClient;
+pub use constellation::{connect, ConstellationClient};
 pub use rest::REST;
