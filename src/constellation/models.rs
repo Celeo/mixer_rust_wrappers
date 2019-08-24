@@ -151,12 +151,28 @@ mod tests {
     }
 
     #[test]
+    fn event_try_from_json_fail() {
+        let json = json!({});
+        let res = Event::try_from(json);
+
+        assert!(res.is_err());
+    }
+
+    #[test]
     fn reply_try_from_json() {
         let text = r#"{"type":"reply","id":40,"result":null,"error":null}"#;
         let json: Value = serde_json::from_str(&text).unwrap();
         let reply = Reply::try_from(json).unwrap();
 
         assert_eq!(reply.id, 40);
+    }
+
+    #[test]
+    fn reply_try_from_json_fail() {
+        let json = json!({});
+        let res = Reply::try_from(json);
+
+        assert!(res.is_err());
     }
 
     #[test]
@@ -167,6 +183,16 @@ mod tests {
         };
 
         assert_eq!(error.explain(), "Unknown packet type".to_owned());
+    }
+
+    #[test]
+    fn error_explain_bad_id() {
+        let error = MixerError {
+            id: 0,
+            message: String::new(),
+        };
+
+        assert_eq!(error.explain(), "Unknown error".to_owned());
     }
 
     #[test]

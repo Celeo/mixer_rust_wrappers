@@ -3,3 +3,4 @@ Cargo.lock
 .env
 src/main.rs
 tarpaulin-report.html
+cobertura.xml

@@ -137,7 +137,12 @@ mod tests {
             .create();
         let rest = REST::new("");
         let resp = rest
-            .query(Method::GET, "somewhere", Some(&[("foo", "bar")]), None)
+            .query(
+                Method::GET,
+                "somewhere",
+                Some(&[("foo", "bar")]),
+                Some("hello world"),
+            )
             .unwrap();
         assert_eq!(body, resp);
     }
