@@ -1,6 +1,8 @@
 # Mixer Rust Wrappers
 
 [![CircleCI](https://circleci.com/gh/Celeo/mixer_rust_wrappers.svg?style=svg)](https://circleci.com/gh/Celeo/mixer_rust_wrappers)
+[![Crates.io](https://img.shields.io/crates/v/mixer_wrappers)](https://crates.io/crates/mixer_wrappers)
+[![Docs.rs](https://docs.rs/mixer_wrappers/badge.svg)](https://docs.rs/mixer_wrappers/latest/mixer_wrappers/)
 
 Rust wrappers for the Mixer APIs at https://dev.mixer.com/.
 
