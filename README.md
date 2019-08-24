@@ -1,6 +1,8 @@
 # Mixer Rust Wrappers
 
-Rust wrappers for the Mixer APIs at https://dev.mixer.com/
+[![CircleCI](https://circleci.com/gh/Celeo/mixer_rust_wrappers.svg?style=svg)](https://circleci.com/gh/Celeo/mixer_rust_wrappers)
+
+Rust wrappers for the Mixer APIs at https://dev.mixer.com/.
 
 ## Building
 
