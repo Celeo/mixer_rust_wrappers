@@ -1,23 +1,28 @@
 [package]
-name = "mixer_rust_wrappers"
+name = "mixer_wrappers"
 version = "0.1.0"
 authors = ["Celeo <celeodor@gmail.com>"]
 edition = "2018"
+description = "Wrappers around the Mixer APIs"
+repository = "https://github.com/Celeo/mixer_rust_wrappers"
+readme = "README.md"
+keywords = ["mixer"]
+categories = ["api-bindings"]
+license = "Apache 2.0 AND MIT"
+
+[badges]
+circle-ci = { repository = "https://github.com/Celeo/mixer_rust_wrappers", branch = "master" }
+maintenance = { status = "actively-developed" }
 
 [lib]
-name = "mixer_rust_wrappers"
+name = "mixer_wrappers"
 path = "src/lib.rs"
-
-[[bin]]
-name = "driver"
-path = "src/main.rs"
 
 [dependencies]
 atomic-counter = "1.0.1"
 failure = "0.1.5"
 lazy_static = "1.3.0"
 log = "0.4.8"
-log4rs = "0.8.3"
 kankyo = "0.3.0"
 reqwest = "0.9.19"
 serde = "1.0.99"

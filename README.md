@@ -37,7 +37,7 @@ The REST wrapper is very simple. It basically only does two things:
 Create an instance of the `REST` struct with
 
 ```rust
-use mixer_rust_wrappers::REST;
+use mixer_wrappers::REST;
 
 let client = REST::new("your_client_id_here");
 ```
@@ -59,7 +59,7 @@ The `query` function returns a Result, so be sure to handle that appropriately.
 This is the more interesting part of the library. This wrapper makes it easy to listen to and send messages to the real-time API. Start with
 
 ```rust
-use mixer_rust_wrappers::connect;
+use mixer_wrappers::connect;
 
 let (mut client, receiver) = connect().unwrap();
 ```

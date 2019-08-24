@@ -28,7 +28,7 @@ impl REST {
     /// # Examples
     ///
     /// ```rust
-    /// use mixer_rust_wrappers::rest::REST;
+    /// use mixer_wrappers::rest::REST;
     ///
     /// let api = REST::new("abcd");
     /// ```
@@ -78,7 +78,7 @@ impl REST {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use mixer_rust_wrappers::REST;
+    /// # use mixer_wrappers::REST;
     /// # use reqwest::Method;
     /// let api = REST::new("");
     /// let text = api.query(Method::GET, "some/endpoint", None, None).unwrap();

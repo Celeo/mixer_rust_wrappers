@@ -235,14 +235,14 @@ impl ConstellationClient {
 /// ## Simple method call
 ///
 /// ```rust,no_run
-/// # use mixer_rust_wrappers::constellation::connect;
+/// # use mixer_wrappers::constellation::connect;
 /// let (client, receiver) = connect().unwrap();
 /// ```
 ///
 /// ## Full program
 ///
 /// ```rust,ignore
-/// use mixer_rust_wrappers::constellation::{connect, models::StreamMessage};
+/// use mixer_wrappers::constellation::{connect, models::StreamMessage};
 /// use std::{collections::HashMap, sync::mpsc::Receiver, thread};
 ///
 /// fn message_handler(receiver: Receiver<StreamMessage>) {
