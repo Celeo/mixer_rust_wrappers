@@ -1,4 +1,3 @@
-use super::errors::ERRORS;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, convert::TryFrom};
@@ -62,16 +61,6 @@ pub struct MixerError {
     pub message: String,
 }
 
-impl MixerError {
-    /// Look up the error's explanation
-    pub fn explain(&self) -> String {
-        match ERRORS.get(&self.id) {
-            Some(v) => v.to_owned(),
-            None => "Unknown error".to_owned(),
-        }
-    }
-}
-
 /// A Replay to a method call.
 ///
 /// These are sent from Constellation to the client as
@@ -118,7 +107,7 @@ pub struct StreamMessage {
 
 #[cfg(test)]
 mod tests {
-    use super::{Event, MixerError, Reply};
+    use super::{Event, Reply};
     use serde_json::{json, Value};
     use std::{collections::HashMap, convert::TryFrom};
 
@@ -154,26 +143,6 @@ mod tests {
         let res = Reply::try_from(json);
 
         assert!(res.is_err());
-    }
-
-    #[test]
-    fn error_explain() {
-        let error = MixerError {
-            id: 4008,
-            message: String::new(),
-        };
-
-        assert_eq!(error.explain(), "Unknown packet type".to_owned());
-    }
-
-    #[test]
-    fn error_explain_bad_id() {
-        let error = MixerError {
-            id: 0,
-            message: String::new(),
-        };
-
-        assert_eq!(error.explain(), "Unknown error".to_owned());
     }
 
     #[test]

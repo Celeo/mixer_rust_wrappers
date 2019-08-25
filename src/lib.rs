@@ -18,5 +18,6 @@ mod internal;
 /// REST API
 pub mod rest;
 
-pub use constellation::{connect, ConstellationClient};
+pub use chat::ChatClient;
+pub use constellation::ConstellationClient;
 pub use rest::REST;

@@ -46,8 +46,8 @@ pub struct Method {
     pub method_type: String,
     /// The method to call
     pub method: String,
-    /// Method's parameters
-    pub arguments: HashMap<String, Value>,
+    /// Method parameters
+    pub arguments: Vec<Value>,
     /// Unique id for this method call
     pub id: usize,
 }
