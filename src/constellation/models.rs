@@ -1,7 +1,7 @@
 use super::errors::ERRORS;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, convert::TryFrom, fmt};
+use std::{collections::HashMap, convert::TryFrom};
 
 /// An Event coming in from the socket.
 ///
@@ -12,7 +12,7 @@ use std::{collections::HashMap, convert::TryFrom, fmt};
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Event {
     #[serde(rename = "type")]
-    /// Always 'type'
+    /// Always 'event'
     pub event_type: String,
     /// Which event
     pub event: String,
@@ -20,13 +20,6 @@ pub struct Event {
     /// per the docs, completely unstructured; it depends
     /// on which kind of event was received.
     pub data: Option<Value>,
-}
-
-impl fmt::Display for Event {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let as_text = serde_json::to_string(&self).expect("Could not convert to JSON");
-        write!(f, "{}", as_text)
-    }
 }
 
 impl TryFrom<Value> for Event {
@@ -58,13 +51,6 @@ pub struct Method {
     pub params: HashMap<String, Value>,
     /// Unique id for this method call
     pub id: usize,
-}
-
-impl fmt::Display for Method {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let as_text = serde_json::to_string(&self).expect("Could not convert to JSON");
-        write!(f, "{}", as_text)
-    }
 }
 
 /// Error from Constellation
@@ -103,13 +89,6 @@ pub struct Reply {
     pub error: Option<MixerError>,
 }
 
-impl fmt::Display for Reply {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let as_text = serde_json::to_string(&self).expect("Could not convert to JSON");
-        write!(f, "{}", as_text)
-    }
-}
-
 impl TryFrom<Value> for Reply {
     type Error = &'static str;
 
@@ -137,7 +116,7 @@ pub struct StreamMessage {
 
 #[cfg(test)]
 mod tests {
-    use super::{Event, Method, MixerError, Reply};
+    use super::{Event, MixerError, Reply};
     use serde_json::{json, Value};
     use std::{collections::HashMap, convert::TryFrom};
 
@@ -204,7 +183,7 @@ mod tests {
         assert_eq!("hello", event.event);
         assert_eq!(Some(json!({})), event.data);
 
-        assert_eq!(text, format!("{}", event));
+        assert_eq!(text, serde_json::to_string(&event).unwrap());
     }
 
     #[test]
@@ -219,21 +198,6 @@ mod tests {
         assert_eq!(Some(map), reply.result);
         assert_eq!(None, reply.error);
 
-        assert_eq!(text, format!("{}", reply));
-    }
-
-    #[test]
-    fn method_display() {
-        let mut map = HashMap::new();
-        map.insert(String::from("foo"), json!("bar"));
-        let method = Method {
-            method_type: String::from("method"),
-            method: String::from("something"),
-            params: map,
-            id: 100,
-        };
-        let as_text = format!("{}", method);
-        let method_check = serde_json::from_str(&as_text).unwrap();
-        assert_eq!(method, method_check);
+        assert_eq!(text, serde_json::to_string(&reply).unwrap());
     }
 }
