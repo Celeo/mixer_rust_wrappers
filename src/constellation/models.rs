@@ -93,18 +93,6 @@ impl TryFrom<Value> for Reply {
     }
 }
 
-/// Wrapper for either an Event, or a Reply.
-///
-/// This is the struct that's sent through the returned
-/// MPSC Receiver when connecting.
-#[derive(Debug)]
-pub struct StreamMessage {
-    /// Potential event
-    pub event: Option<Event>,
-    /// Potential reply
-    pub reply: Option<Reply>,
-}
-
 #[cfg(test)]
 mod tests {
     use super::{Event, Reply};

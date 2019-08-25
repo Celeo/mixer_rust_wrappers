@@ -84,17 +84,70 @@ impl TryFrom<Value> for Reply {
     }
 }
 
-/// Wrapper for either an Event, or a Reply.
-///
-/// This is the struct that's sent through the returned
-/// MPSC Receiver when connecting.
-#[derive(Debug)]
-pub struct StreamMessage {
-    /// Potential event
-    pub event: Option<Event>,
-    /// Potential reply
-    pub reply: Option<Reply>,
-}
-
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::{Event, Reply};
+    use serde_json::{json, Value};
+    use std::{collections::HashMap, convert::TryFrom};
+
+    #[test]
+    fn event_try_from_json() {
+        let text = r#"{"type":"event","event":"foobar","data": null}"#;
+        let json: Value = serde_json::from_str(&text).unwrap();
+        let event = Event::try_from(json).unwrap();
+
+        assert_eq!(event.event, "foobar");
+    }
+
+    #[test]
+    fn event_try_from_json_fail() {
+        let json = json!({});
+        let res = Event::try_from(json);
+
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn reply_try_from_json() {
+        let text = r#"{"type":"reply","id":40,"data":null,"error":null}"#;
+        let json: Value = serde_json::from_str(&text).unwrap();
+        let reply = Reply::try_from(json).unwrap();
+
+        assert_eq!(reply.id, 40);
+    }
+
+    #[test]
+    fn reply_try_from_json_fail() {
+        let json = json!({});
+        let res = Reply::try_from(json);
+
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn event_from_json() {
+        let text = r#"{"type":"event","event":"hello","data":{}}"#;
+        let event: Event = serde_json::from_str(&text).unwrap();
+
+        assert_eq!("event", event.event_type);
+        assert_eq!("hello", event.event);
+        assert_eq!(Some(json!({})), event.data);
+
+        assert_eq!(text, serde_json::to_string(&event).unwrap());
+    }
+
+    #[test]
+    fn reply_from_json() {
+        let text = r#"{"type":"reply","id":100,"data":{"foo":123},"error":null}"#;
+        let reply: Reply = serde_json::from_str(&text).unwrap();
+
+        assert_eq!("reply", reply.reply_type);
+        assert_eq!(100, reply.id);
+        let mut map = HashMap::new();
+        map.insert(String::from("foo"), json!(123));
+        assert_eq!(Some(map), reply.data);
+        assert_eq!(None, reply.error);
+
+        assert_eq!(text, serde_json::to_string(&reply).unwrap());
+    }
+}
