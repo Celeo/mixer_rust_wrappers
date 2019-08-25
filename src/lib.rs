@@ -13,6 +13,8 @@
 pub mod chat;
 /// Real-time API
 pub mod constellation;
+/// Internal wrappers around ws-rs for convenience
+mod internal;
 /// REST API
 pub mod rest;
 
