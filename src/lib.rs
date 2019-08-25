@@ -9,10 +9,15 @@
 
 #![warn(missing_docs)]
 
+/// Chat API
+pub mod chat;
 /// Real-time API
 pub mod constellation;
+/// Internal wrappers around ws-rs for convenience
+mod internal;
 /// REST API
 pub mod rest;
 
-pub use constellation::{connect, ConstellationClient};
+pub use chat::ChatClient;
+pub use constellation::ConstellationClient;
 pub use rest::REST;

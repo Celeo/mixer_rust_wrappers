@@ -4,10 +4,10 @@ use std::{collections::HashMap, convert::TryFrom};
 
 /// An Event coming in from the socket.
 ///
-/// These are sent from Constellation when connecting,
+/// These are sent from the chat server when connecting,
 /// receiving a live event, etc.
 ///
-/// See https://dev.mixer.com/reference/constellation/events
+/// See https://dev.mixer.com/reference/chat/events
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Event {
     /// Always 'event'
@@ -38,35 +38,26 @@ impl TryFrom<Value> for Event {
 ///
 /// This is how clients send data _to_ the socket.
 ///
-/// See https://dev.mixer.com/reference/constellation/methods
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+/// See https://dev.mixer.com/reference/chat/methods#methods
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Method {
     /// Always 'method'
     #[serde(rename = "type")]
     pub method_type: String,
     /// The method to call
     pub method: String,
-    /// Method's parameters
-    pub params: HashMap<String, Value>,
+    /// Method parameters
+    pub arguments: Vec<Value>,
     /// Unique id for this method call
     pub id: usize,
 }
 
-/// Error from Constellation
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct MixerError {
-    /// Error's id
-    pub id: u16,
-    /// Error's message
-    pub message: String,
-}
-
 /// A Replay to a method call.
 ///
-/// These are sent from Constellation to the client as
+/// These are sent from the chat server to the client as
 /// a response to the client sending a method.
 ///
-/// See https://dev.mixer.com/reference/constellation/methods#reply
+/// See https://dev.mixer.com/reference/chat/methods#reply
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Reply {
     #[serde(rename = "type")]
@@ -75,9 +66,9 @@ pub struct Reply {
     /// The id of the method this reply is for
     pub id: usize,
     /// Method call result
-    pub result: Option<HashMap<String, Value>>,
+    pub data: Option<HashMap<String, Value>>,
     /// Method error
-    pub error: Option<MixerError>,
+    pub error: Option<String>,
 }
 
 impl TryFrom<Value> for Reply {
@@ -118,7 +109,7 @@ mod tests {
 
     #[test]
     fn reply_try_from_json() {
-        let text = r#"{"type":"reply","id":40,"result":null,"error":null}"#;
+        let text = r#"{"type":"reply","id":40,"data":null,"error":null}"#;
         let json: Value = serde_json::from_str(&text).unwrap();
         let reply = Reply::try_from(json).unwrap();
 
@@ -147,14 +138,14 @@ mod tests {
 
     #[test]
     fn reply_from_json() {
-        let text = r#"{"type":"reply","id":100,"result":{"foo":123},"error":null}"#;
+        let text = r#"{"type":"reply","id":100,"data":{"foo":123},"error":null}"#;
         let reply: Reply = serde_json::from_str(&text).unwrap();
 
         assert_eq!("reply", reply.reply_type);
         assert_eq!(100, reply.id);
         let mut map = HashMap::new();
         map.insert(String::from("foo"), json!(123));
-        assert_eq!(Some(map), reply.result);
+        assert_eq!(Some(map), reply.data);
         assert_eq!(None, reply.error);
 
         assert_eq!(text, serde_json::to_string(&reply).unwrap());
