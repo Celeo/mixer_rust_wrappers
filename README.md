@@ -23,7 +23,11 @@ cd mixer_rust_wrappers
 cargo build
 ```
 
+### Tests
+
 Run tests with `cargo test`.
+
+If you want code coverage, you can use [kcov](https://github.com/SimonKagstrom/kcov) via `cargo test --no-run && kcov --exclude-pattern=/.cargo target/cov target/debug/mixer_wrappers*`.
 
 ## Using
 
