@@ -11,8 +11,8 @@ use std::{collections::HashMap, convert::TryFrom};
 /// See https://dev.mixer.com/reference/constellation/events
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Event {
-    #[serde(rename = "type")]
     /// Always 'event'
+    #[serde(rename = "type")]
     pub event_type: String,
     /// Which event
     pub event: String,
@@ -42,8 +42,8 @@ impl TryFrom<Value> for Event {
 /// See https://dev.mixer.com/reference/constellation/methods
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Method {
-    #[serde(rename = "type")]
     /// Always 'method'
+    #[serde(rename = "type")]
     pub method_type: String,
     /// The method to call
     pub method: String,
@@ -76,6 +76,8 @@ impl MixerError {
 ///
 /// These are sent from Constellation to the client as
 /// a response to the client sending a method.
+///
+/// See https://dev.mixer.com/reference/constellation/methods#reply
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Reply {
     #[serde(rename = "type")]

@@ -1,6 +1,4 @@
-/// Error handling
-pub mod errors;
-/// Static models for the JSON data
+/// Static models for JSON data
 pub mod models;
 
 use atomic_counter::{AtomicCounter, ConsistentCounter};
@@ -108,8 +106,8 @@ impl Handler for SocketClient {
     }
 }
 
-/// Client for communicating with Mixer's Constellation endpoint.
-pub struct ConstellationClient {
+/// Client for communicating with Mixer's chat server.
+pub struct ChatClient {
     socket_out: SocketSender,
     connection_receiver: Receiver<bool>,
     /// Thread handle that you can join to to keep your program running
@@ -118,14 +116,14 @@ pub struct ConstellationClient {
     method_counter: ConsistentCounter,
 }
 
-impl ConstellationClient {
+impl ChatClient {
     /// Create a new high-level client.
     fn new(
         socket_out: SocketSender,
         connection_receiver: Receiver<bool>,
         client_thread_handler: JoinHandle<()>,
     ) -> Self {
-        ConstellationClient {
+        ChatClient {
             socket_out,
             connection_receiver,
             client_thread_handler,
@@ -185,11 +183,11 @@ impl ConstellationClient {
     /// ```rust,ignore
     /// let method = client.create_method("some-method-name", &params);
     /// ```
-    pub fn create_method(&mut self, method: &str, params: &HashMap<String, Value>) -> Method {
+    pub fn create_method(&mut self, method: &str, arguments: &HashMap<String, Value>) -> Method {
         Method {
             method_type: "method".to_owned(),
             method: method.to_owned(),
-            params: params.clone(),
+            arguments: arguments.clone(),
             id: self.method_counter.inc(),
         }
     }
@@ -221,60 +219,11 @@ impl ConstellationClient {
     }
 }
 
-/// Create a connection to the Mixer Constellation websocket endpoint.
-///
-/// Returns a tuple of the client you can use to send data to Constellation,
-/// and an MPSC Receiver used for getting data out of the socket. This method
-/// utilizes threads so that it does not block; the program can continue
-/// running after calling this method.
-///
-/// Of the tuple that's returned, the first struct is the client that is
-/// used to send messages to Constellation. The second item is the MPSC
-/// receiver that is sent the replies and events back from the socket.
-/// Handling these structs is a task for the program.
-///
-/// # Arguments
-///
-/// * `client_id` - your Mixer API client ID
-///
-/// # Examples
-///
-/// ## Simple method call
-///
-/// ```rust,no_run
-/// # use mixer_wrappers::constellation::connect;
-/// let (client, receiver) = connect("aaaaaaaaaa").unwrap();
-/// ```
-///
-/// ## Full program
-///
-/// ```rust,no_run
-/// use mixer_wrappers::constellation::{connect, models::StreamMessage};
-/// use std::{collections::HashMap, sync::mpsc::Receiver, thread};
-///
-/// fn message_handler(receiver: Receiver<StreamMessage>) {
-///     loop {
-///         if let Ok(message) = receiver.try_recv() {
-///             if let Some(event) = message.event {
-///                 // ...
-///             }
-///             if let Some(reply) = message.reply {
-///                 // ...
-///             }
-///         }
-///     }
-/// }
-///
-/// fn main() {
-///     let (mut client, receiver) = connect("aaaaaaaaaa").expect("Could not start client");
-///     thread::spawn(move || {
-///         message_handler(receiver);
-///     });
-///     client.call_method("ping", &HashMap::new()).unwrap();
-///     client.client_thread_handler.join().unwrap();
-/// }
-/// ```
-pub fn connect(client_id: &str) -> Result<(ConstellationClient, Receiver<StreamMessage>), Error> {
+/// TBD
+pub fn connect(
+    endpoint: &str,
+    client_id: &str,
+) -> Result<(ChatClient, Receiver<StreamMessage>), Error> {
     debug!("Setting up connection");
     // create channels
     let (ws_send, ws_recv) = channel::<SocketSender>();
@@ -282,10 +231,11 @@ pub fn connect(client_id: &str) -> Result<(ConstellationClient, Receiver<StreamM
     let (msg_send, msg_rev) = channel::<StreamMessage>();
 
     // launch the socket connection in a new thread
+    let endpoint = endpoint.to_owned();
     let client_id = client_id.to_owned();
     let client_handler = thread::spawn(move || {
         debug!("Starting connection");
-        socket_connect("wss://constellation.mixer.com", |socket_out| {
+        socket_connect(endpoint, |socket_out| {
             let client = SocketClient::new(&client_id, conn_send.clone(), msg_send.clone());
             // send the socket output struct through the corresponding channel
             ws_send
@@ -299,7 +249,7 @@ pub fn connect(client_id: &str) -> Result<(ConstellationClient, Receiver<StreamM
     let socket_out = ws_recv.recv()?;
 
     // create the final client
-    let client = ConstellationClient::new(socket_out, conn_recv, client_handler);
+    let client = ChatClient::new(socket_out, conn_recv, client_handler);
 
     // return the final client
     debug!("Connection setup finished");

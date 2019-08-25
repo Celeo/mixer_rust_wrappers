@@ -9,6 +9,8 @@
 
 #![warn(missing_docs)]
 
+/// Chat API
+pub mod chat;
 /// Real-time API
 pub mod constellation;
 /// REST API
