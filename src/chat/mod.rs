@@ -42,7 +42,7 @@ impl ChatClient {
     ///
     /// ```rust,no_run
     /// use mixer_wrappers::ChatClient;
-    /// let (client, receiver) = ChatClient::connect("aaa", "bbb").unwrap();
+    /// let (mut client, receiver) = ChatClient::connect("aaa", "bbb").unwrap();
     /// ```
     ///
     /// [documentation]: https://dev.mixer.com/reference/chat/connection
@@ -65,8 +65,8 @@ impl ChatClient {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use mixer_wrappers::{ChatClient, connect};
-    /// # let (client, _) = ChatClient::connect("aaa", "bbb").unwrap();
+    /// # use mixer_wrappers::ChatClient;
+    /// # let (mut client, _) = ChatClient::connect("aaa", "bbb").unwrap();
     /// if let Err(e) = client.authenticate(123, Some(456), Some("ccc")) {
     ///     // ...
     /// }
@@ -113,9 +113,9 @@ impl ChatClient {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use mixer_wrappers::{ChatClient, connect};
+    /// # use mixer_wrappers::ChatClient;
     /// # use serde_json::{json, Value};
-    /// # let (client, _) = ChatClient::connect("", "").unwrap();
+    /// # let (mut client, _) = ChatClient::connect("", "").unwrap();
     /// if let Err(e) = client.call_method("some_method", &[json!(123), json!("abc")]) {
     ///     // ...
     /// }
@@ -146,9 +146,9 @@ impl ChatClient {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use mixer_wrappers::{ChatClient, connect};
-    /// # let (client, receiver) = ChatClient::connect("", "").unwrap();
-    /// let message = client.parse(receiver.recv().unwrap()).unwrap();
+    /// # use mixer_wrappers::ChatClient;
+    /// # let (mut client, receiver) = ChatClient::connect("", "").unwrap();
+    /// let message = client.parse(&receiver.recv().unwrap()).unwrap();
     /// ```
     pub fn parse(&self, message: &str) -> Result<StreamMessage, Error> {
         let json: Value = serde_json::from_str(message)?;

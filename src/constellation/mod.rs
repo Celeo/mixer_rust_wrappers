@@ -51,12 +51,12 @@ impl ConstellationClient {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use mixer_wrappers::{ConstellationClient, connect};
+    /// # use mixer_wrappers::ConstellationClient;
     /// # use serde_json::{json, Value};
     /// # use std::collections::HashMap;
-    /// # let (client, _) = ConstellationClient::connect("").unwrap();
+    /// # let (mut client, _) = ConstellationClient::connect("").unwrap();
     /// let mut map = HashMap::new();
-    /// map.insert("abc", json!(123));
+    /// map.insert(String::from("abc"), json!(123));
     /// if let Err(e) = client.call_method("some_method", &map) {
     ///     // ...
     /// }
@@ -91,9 +91,9 @@ impl ConstellationClient {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use mixer_wrappers::{ConstellationClient, connect};
+    /// # use mixer_wrappers::ConstellationClient;
     /// # let (client, receiver) = ConstellationClient::connect("").unwrap();
-    /// let message = client.parse(receiver.recv().unwrap()).unwrap();
+    /// let message = client.parse(&receiver.recv().unwrap()).unwrap();
     /// ```
     pub fn parse(&self, message: &str) -> Result<StreamMessage, Error> {
         let json: Value = serde_json::from_str(message)?;

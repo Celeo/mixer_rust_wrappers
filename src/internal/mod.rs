@@ -141,7 +141,7 @@ impl ClientSocketWrapper {
 ///
 /// ## Simple method call
 ///
-/// ```rust,no_run
+/// ```rust,ignore
 /// # use mixer_wrappers::internal::connect;
 /// let (client, receiver) = connect("wss://somewhere.com:443", "aaaaaaaaaa").unwrap();
 /// ```
