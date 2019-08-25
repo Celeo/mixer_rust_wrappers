@@ -1,6 +1,9 @@
+#![allow(unused)] // FIXME
+
 use atomic_counter::{AtomicCounter, ConsistentCounter};
 use failure::{format_err, Error};
 use log::{debug, error, info, warn};
+use serde::Deserialize;
 use serde_json::Value;
 use std::{
     collections::HashMap,
@@ -198,4 +201,169 @@ pub fn connect(
     // return the final client
     debug!("Connection setup finished");
     Ok((client, msg_rev))
+}
+
+pub mod constellation {
+
+    use super::{connect, ClientSocketWrapper};
+    use crate::constellation::models::{Event, Method, Reply};
+    use atomic_counter::{AtomicCounter, ConsistentCounter};
+    use failure::{format_err, Error};
+    use log::debug;
+    use serde_json::Value;
+    use std::{collections::HashMap, convert::TryFrom, sync::mpsc::Receiver};
+
+    pub enum StreamMessage {
+        Event(Event),
+        Reply(Reply),
+    }
+
+    struct ConstellationClient {
+        client: ClientSocketWrapper,
+        method_counter: ConsistentCounter,
+    }
+
+    impl ConstellationClient {
+        fn connect(client_id: &str) -> Result<(Self, Receiver<String>), Error> {
+            let (client, receiver) = super::connect("wss://constellation.mixer.com", client_id)?;
+            Ok((
+                ConstellationClient {
+                    client,
+                    method_counter: ConsistentCounter::new(0),
+                },
+                receiver,
+            ))
+        }
+
+        pub fn create_method(&mut self, method: &str, params: &HashMap<String, Value>) -> Method {
+            Method {
+                method_type: "method".to_owned(),
+                method: method.to_owned(),
+                params: params.clone(),
+                id: self.method_counter.inc(),
+            }
+        }
+
+        pub fn call_method(
+            &mut self,
+            method: &str,
+            params: &HashMap<String, Value>,
+        ) -> Result<(), Error> {
+            let obj_to_send = self.create_method(method, params);
+            debug!("Sending method call to socket: {:?}", obj_to_send);
+            self.client
+                .socket_out
+                .send(serde_json::to_string(&obj_to_send)?)?;
+            Ok(())
+        }
+
+        pub fn parse(&self, message: &str) -> Result<StreamMessage, Error> {
+            let json: Value = serde_json::from_str(message)?;
+            let type_ = match json["type"].as_str() {
+                Some(t) => t,
+                None => return Err(format_err!("Message does not have a 'type' field")),
+            };
+            if type_ == "event" {
+                return match Event::try_from(json.clone()) {
+                    Ok(e) => Ok(StreamMessage::Event(e)),
+                    Err(e) => Err(format_err!("{}", e)),
+                };
+            }
+            if type_ == "reply" {
+                return match Reply::try_from(json.clone()) {
+                    Ok(r) => Ok(StreamMessage::Reply(r)),
+                    Err(e) => Err(format_err!("{}", e)),
+                };
+            }
+            Err(format_err!("Unknown type '{}'", type_))
+        }
+    }
+
+}
+
+pub mod chat {
+
+    use super::{connect, ClientSocketWrapper};
+    use crate::chat::models::{Event, Method, Reply};
+    use atomic_counter::{AtomicCounter, ConsistentCounter};
+    use failure::{format_err, Error};
+    use log::debug;
+    use serde_json::Value;
+    use std::{collections::HashMap, convert::TryFrom, sync::mpsc::Receiver};
+
+    pub enum StreamMessage {
+        Event(Event),
+        Reply(Reply),
+    }
+
+    struct ChatClient {
+        client: ClientSocketWrapper,
+        method_counter: ConsistentCounter,
+    }
+
+    impl ChatClient {
+        fn connect(
+            endpoint: &str,
+            auth_key: &str,
+            client_id: &str,
+        ) -> Result<(Self, Receiver<String>), Error> {
+            // TODO what to do with auth_key?
+            let (client, receiver) = super::connect(endpoint, client_id)?;
+            Ok((
+                ChatClient {
+                    client,
+                    method_counter: ConsistentCounter::new(0),
+                },
+                receiver,
+            ))
+        }
+
+        pub fn create_method(
+            &mut self,
+            method: &str,
+            arguments: &HashMap<String, Value>,
+        ) -> Method {
+            Method {
+                method_type: "method".to_owned(),
+                method: method.to_owned(),
+                arguments: arguments.clone(),
+                id: self.method_counter.inc(),
+            }
+        }
+
+        pub fn call_method(
+            &mut self,
+            method: &str,
+            arguments: &HashMap<String, Value>,
+        ) -> Result<(), Error> {
+            let obj_to_send = self.create_method(method, arguments);
+            debug!("Sending method call to socket: {:?}", obj_to_send);
+            self.client
+                .socket_out
+                .send(serde_json::to_string(&obj_to_send)?)?;
+            Ok(())
+        }
+
+        pub fn parse(&self, message: &str) -> Result<StreamMessage, Error> {
+            let json: Value = serde_json::from_str(message)?;
+            let type_ = match json["type"].as_str() {
+                Some(t) => t,
+                None => return Err(format_err!("Message does not have a 'type' field")),
+            };
+            if type_ == "event" {
+                return match Event::try_from(json.clone()) {
+                    Ok(e) => Ok(StreamMessage::Event(e)),
+                    Err(e) => Err(format_err!("{}", e)),
+                };
+            }
+            if type_ == "reply" {
+                return match Reply::try_from(json.clone()) {
+                    Ok(r) => Ok(StreamMessage::Reply(r)),
+                    Err(e) => Err(format_err!("{}", e)),
+                };
+            }
+            Err(format_err!("Unknown type '{}'", type_))
+        }
+    }
+
 }
