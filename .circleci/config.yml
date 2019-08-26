@@ -2,20 +2,19 @@ version: 2
 
 jobs:
   build:
-    machine: true
+    docker:
+      - image: rust:latest
+    environment:
+      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
     steps:
       - checkout
+      - restore_cache:
+          key: project-cache
       - run:
-          name: Pull iamge
-          command: docker pull celeo/rust_and_kcov:latest
-      - run:
-          name: Generate report
-          command: >
-            docker run --security-opt seccomp=unconfined -e CODECOV_TOKEN=${CODECOV_TOKEN} -v `pwd`:/volume celeo/rust_and_kcov:latest bash -c
-            "
-              cargo test --no-run &&
-              kcov --exclude-pattern=/usr/local cov $(find target/debug -maxdepth 1 -type f -name 'mixer_wrappers-*' | grep -ve '\.d$' | head -1)
-            "
-      - run:
-          name: Upload
-          command: bash <(curl -s https://codecov.io/bash) -Z -f cov
+          name: Test
+          command: cargo test
+      - save_cache:
+          key: project-cache
+          paths:
+            - "~/.cargo"
+            - "./target"
