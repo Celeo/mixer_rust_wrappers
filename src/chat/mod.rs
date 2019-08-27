@@ -50,7 +50,13 @@ impl ChatClient {
     /// [documentation]: https://dev.mixer.com/reference/chat/connection
     pub fn connect(endpoint: &str, client_id: &str) -> Result<(Self, Receiver<String>), Error> {
         let (client, join_handle, receiver) = socket_connect(endpoint, client_id)?;
-        Ok((ChatClient { client , join_handle}, receiver))
+        Ok((
+            ChatClient {
+                client,
+                join_handle,
+            },
+            receiver,
+        ))
     }
 
     /// Authenticate with the server. This must be done after connecting.
@@ -82,23 +88,29 @@ impl ChatClient {
         user_id: Option<usize>,
         auth_key: Option<&str>,
     ) -> Result<(), Error> {
-        if !self.client.check_connection() {
-            return Err(format_err!("Not connected to socket"));
-        }
-        if user_id.is_none() || auth_key.is_none() {
+        let method = if user_id.is_none() || auth_key.is_none() {
             debug!("Authenticating as anonymous");
-            self.call_method("auth", &[json!(channel_id)])
+            Method {
+                method_type: "method".to_owned(),
+                method: "auth".to_owned(),
+                arguments: vec![json!(channel_id)],
+                id: self.client.method_counter.inc(),
+            }
         } else {
             debug!("Authenticating as a user");
-            self.call_method(
-                "auth",
-                &[
+            Method {
+                method_type: "method".to_owned(),
+                method: "auth".to_owned(),
+                arguments: vec![
                     json!(channel_id),
                     json!(user_id.unwrap()),
                     json!(auth_key.unwrap()),
                 ],
-            )
-        }
+                id: self.client.method_counter.inc(),
+            }
+        };
+        self.client.socket_out.send(serde_json::to_string(&method)?)?;
+        Ok(())
     }
 
     /// Call a method, sending data to the socket.
