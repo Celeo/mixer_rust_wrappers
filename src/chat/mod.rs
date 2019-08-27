@@ -6,7 +6,7 @@ use atomic_counter::AtomicCounter;
 use failure::{format_err, Error};
 use log::debug;
 use serde_json::{json, Value};
-use std::{convert::TryFrom, sync::mpsc::Receiver};
+use std::{convert::TryFrom, sync::mpsc::Receiver, thread::JoinHandle};
 
 use models::{Event, Method, Reply};
 
@@ -21,6 +21,8 @@ pub enum StreamMessage {
 /// Wrapper for connecting and interacting with the chat server.
 pub struct ChatClient {
     client: ClientSocketWrapper,
+    /// Internal thread join handle
+    pub join_handle: JoinHandle<()>,
 }
 
 impl ChatClient {
@@ -47,8 +49,8 @@ impl ChatClient {
     ///
     /// [documentation]: https://dev.mixer.com/reference/chat/connection
     pub fn connect(endpoint: &str, client_id: &str) -> Result<(Self, Receiver<String>), Error> {
-        let (client, receiver) = socket_connect(endpoint, client_id)?;
-        Ok((ChatClient { client }, receiver))
+        let (client, join_handle, receiver) = socket_connect(endpoint, client_id)?;
+        Ok((ChatClient { client , join_handle}, receiver))
     }
 
     /// Authenticate with the server. This must be done after connecting.
@@ -147,10 +149,9 @@ impl ChatClient {
     ///
     /// ```rust,no_run
     /// # use mixer_wrappers::ChatClient;
-    /// # let (mut client, receiver) = ChatClient::connect("", "").unwrap();
-    /// let message = client.parse(&receiver.recv().unwrap()).unwrap();
+    /// let message = ChatClient::parse("{\"type\":\"event\"...}").unwrap();
     /// ```
-    pub fn parse(&self, message: &str) -> Result<StreamMessage, Error> {
+    pub fn parse(message: &str) -> Result<StreamMessage, Error> {
         let json: Value = serde_json::from_str(message)?;
         let type_ = match json["type"].as_str() {
             Some(t) => t,

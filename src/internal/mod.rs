@@ -78,8 +78,6 @@ pub struct ClientSocketWrapper {
     /// Raw socket connection
     pub socket_out: SocketSender,
     connection_receiver: Receiver<bool>,
-    /// Thread handle that you can join to to keep your program running
-    pub client_thread_handler: JoinHandle<()>,
     is_connected: bool,
     /// Atomic counter for methods
     pub method_counter: ConsistentCounter,
@@ -90,12 +88,10 @@ impl ClientSocketWrapper {
     fn new(
         socket_out: SocketSender,
         connection_receiver: Receiver<bool>,
-        client_thread_handler: JoinHandle<()>,
     ) -> Self {
         ClientSocketWrapper {
             socket_out,
             connection_receiver,
-            client_thread_handler,
             is_connected: false,
             method_counter: ConsistentCounter::new(0),
         }
@@ -128,9 +124,9 @@ impl ClientSocketWrapper {
 /// running after calling this method.
 ///
 /// Of the tuple that's returned, the first struct is the client that is
-/// used to send messages to the server. The second item is the MPSC
-/// receiver that is sent the replies and events back from the socket.
-/// Handling these structs is a task for the program.
+/// used to send messages to the server. The second is the internal thread
+/// join handle. The third is the MPSC receiver that is sent the replies
+/// and events back from the socket.
 ///
 /// # Arguments
 ///
@@ -143,12 +139,12 @@ impl ClientSocketWrapper {
 ///
 /// ```rust,ignore
 /// # use mixer_wrappers::internal::connect;
-/// let (client, receiver) = connect("wss://somewhere.com:443", "aaaaaaaaaa").unwrap();
+/// let (client, join_handle, receiver) = connect("wss://somewhere.com:443", "aaaaaaaaaa").unwrap();
 /// ```
 pub fn connect(
     endpoint: &str,
     client_id: &str,
-) -> Result<(ClientSocketWrapper, Receiver<String>), Error> {
+) -> Result<(ClientSocketWrapper, JoinHandle<()>, Receiver<String>), Error> {
     debug!("Setting up connection");
     // create channels
     let (ws_send, ws_recv) = channel::<SocketSender>();
@@ -174,9 +170,9 @@ pub fn connect(
     let socket_out = ws_recv.recv()?;
 
     // create the final client
-    let client = ClientSocketWrapper::new(socket_out, conn_recv, client_handler);
+    let client = ClientSocketWrapper::new(socket_out, conn_recv);
 
     // return the final client
     debug!("Connection setup finished");
-    Ok((client, msg_rev))
+    Ok((client, client_handler, msg_rev))
 }

@@ -6,7 +6,7 @@ use atomic_counter::AtomicCounter;
 use failure::{format_err, Error};
 use log::debug;
 use serde_json::Value;
-use std::{collections::HashMap, convert::TryFrom, sync::mpsc::Receiver};
+use std::{collections::HashMap, convert::TryFrom, sync::mpsc::Receiver, thread::JoinHandle};
 
 use models::{Event, Method, Reply};
 
@@ -21,6 +21,8 @@ pub enum StreamMessage {
 /// Wrapper for connecting and interacting with Constellation.
 pub struct ConstellationClient {
     client: ClientSocketWrapper,
+    /// Internal thread join handle
+    pub join_handle: JoinHandle<()>,
 }
 
 impl ConstellationClient {
@@ -37,8 +39,8 @@ impl ConstellationClient {
     /// let (client, receiver) = ConstellationClient::connect("aaa").unwrap();
     /// ```
     pub fn connect(client_id: &str) -> Result<(Self, Receiver<String>), Error> {
-        let (client, receiver) = socket_connect("wss://constellation.mixer.com", client_id)?;
-        Ok((ConstellationClient { client }, receiver))
+        let (client, join_handle, receiver) = socket_connect("wss://constellation.mixer.com", client_id)?;
+        Ok((ConstellationClient { client, join_handle }, receiver))
     }
 
     /// Call a method, sending data to the socket.
@@ -92,10 +94,9 @@ impl ConstellationClient {
     ///
     /// ```rust,no_run
     /// # use mixer_wrappers::ConstellationClient;
-    /// # let (client, receiver) = ConstellationClient::connect("").unwrap();
-    /// let message = client.parse(&receiver.recv().unwrap()).unwrap();
+    /// let message = ConstellationClient::parse("{\"type\":\"event\"...}").unwrap();
     /// ```
-    pub fn parse(&self, message: &str) -> Result<StreamMessage, Error> {
+    pub fn parse(message: &str) -> Result<StreamMessage, Error> {
         let json: Value = serde_json::from_str(message)?;
         let type_ = match json["type"].as_str() {
             Some(t) => t,
