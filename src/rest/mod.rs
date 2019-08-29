@@ -109,6 +109,85 @@ impl REST {
         let text = resp.text()?;
         Ok(text)
     }
+
+    /// Get a struct with several chat-related endpoint helpers.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use mixer_wrappers::REST;
+    /// # use reqwest::Method;
+    /// let api = REST::new("");
+    /// let helper = api.chat_helper();
+    /// ```
+    pub fn chat_helper(&self) -> ChatHelper {
+        ChatHelper { rest: self }
+    }
+}
+
+/// Helper for chat-related REST API endpoints.
+pub struct ChatHelper<'a> {
+    rest: &'a REST,
+}
+
+impl<'a> ChatHelper<'a> {
+    /// Get the channel ID for a username.
+    ///
+    /// See docs for more information: https://dev.mixer.com/reference/chat/connection#connection
+    ///
+    /// # Arguments
+    ///
+    /// * `username` - username to look up
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use mixer_wrappers::rest::{ChatHelper, REST};
+    /// # let api = REST::new("");
+    /// let helper = api.chat_helper();
+    /// let channel_id = helper.get_channel_id("some_username");
+    /// ```
+    pub fn get_channel_id(&self, username: &str) -> Result<usize, Error> {
+        let text = self.rest.query(
+            Method::GET,
+            &format!("channels/{}?fields=id", username),
+            None,
+            None,
+        )?;
+        let json: serde_json::Value = serde_json::from_str(&text)?;
+        let channel_id = json["id"].as_u64().unwrap() as usize;
+        Ok(channel_id)
+    }
+
+    /// Gets a list of chat servers to connect to for the channel ID.
+    ///
+    /// See docs for more information: https://dev.mixer.com/reference/chat/connection#connection
+    ///
+    /// # Arguments
+    ///
+    /// * `channel_id` - channel ID to connect to
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use mixer_wrappers::rest::{ChatHelper, REST};
+    /// # let api = REST::new("");
+    /// let helper = api.chat_helper();
+    /// let servers = helper.get_servers(1234567890);
+    /// ```
+    pub fn get_servers(&self, channel_id: usize) -> Result<Vec<String>, Error> {
+        let text = self
+            .rest
+            .query(Method::GET, &format!("chats/{}", channel_id), None, None)?;
+        let json: serde_json::Value = serde_json::from_str(&text)?;
+        let endpoints: Vec<String> = json["endpoints"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|e| e.as_str().unwrap().to_owned())
+            .collect();
+        Ok(endpoints)
+    }
 }
 
 #[cfg(test)]
