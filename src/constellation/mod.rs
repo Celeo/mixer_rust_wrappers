@@ -5,7 +5,7 @@ use crate::internal::{connect as socket_connect, ClientSocketWrapper};
 use atomic_counter::AtomicCounter;
 use failure::{format_err, Error};
 use log::debug;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::{collections::HashMap, convert::TryFrom, sync::mpsc::Receiver, thread::JoinHandle};
 
 use models::{Event, Method, Reply};
@@ -39,8 +39,15 @@ impl ConstellationClient {
     /// let (client, receiver) = ConstellationClient::connect("aaa").unwrap();
     /// ```
     pub fn connect(client_id: &str) -> Result<(Self, Receiver<String>), Error> {
-        let (client, join_handle, receiver) = socket_connect("wss://constellation.mixer.com", client_id)?;
-        Ok((ConstellationClient { client, join_handle }, receiver))
+        let (client, join_handle, receiver) =
+            socket_connect("wss://constellation.mixer.com", client_id)?;
+        Ok((
+            ConstellationClient {
+                client,
+                join_handle,
+            },
+            receiver,
+        ))
     }
 
     /// Call a method, sending data to the socket.
@@ -82,6 +89,54 @@ impl ConstellationClient {
             .socket_out
             .send(serde_json::to_string(&to_send)?)?;
         Ok(())
+    }
+
+    /// Subscribe to events.
+    ///
+    /// The documentation on this method is found [here], as well as a [listing of events].
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - slice of event names to subscribe to
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use mixer_wrappers::ConstellationClient;
+    /// # let (mut client, _) = ConstellationClient::connect("").unwrap();
+    /// client.subscribe(&["aaa", "bbb"]).unwrap();
+    /// ```
+    ///
+    /// [here]: https://dev.mixer.com/reference/constellation/methods/livesubscribe
+    /// [listing of events]: https://dev.mixer.com/reference/constellation/events
+    pub fn subscribe(&mut self, events: &[&str]) -> Result<(), Error> {
+        let mut map = HashMap::new();
+        map.insert("events".to_owned(), json!(events));
+        self.call_method("livesubscribe", &map)
+    }
+
+    /// Unsubscribe from events.
+    ///
+    /// The documentation on this method is found [here], as well as a [listing of events].
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - slice of event names to subscribe to
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use mixer_wrappers::ConstellationClient;
+    /// # let (mut client, _) = ConstellationClient::connect("").unwrap();
+    /// client.unsubscribe(&["aaa", "bbb"]).unwrap();
+    /// ```
+    ///
+    /// [here]: https://dev.mixer.com/reference/constellation/methods/liveunsubscribe
+    /// [listing of events]: https://dev.mixer.com/reference/constellation/events
+    pub fn unsubscribe(&mut self, events: &[&str]) -> Result<(), Error> {
+        let mut map = HashMap::new();
+        map.insert("events".to_owned(), json!(events));
+        self.call_method("liveunsubscribe", &map)
     }
 
     /// Helper method to parse the JSON messages into structs.
