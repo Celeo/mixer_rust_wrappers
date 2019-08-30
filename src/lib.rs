@@ -15,6 +15,8 @@ pub mod chat;
 pub mod constellation;
 /// Internal wrappers around ws-rs for convenience
 mod internal;
+/// OAuth helpers
+pub mod oauth;
 /// REST API
 pub mod rest;
 
