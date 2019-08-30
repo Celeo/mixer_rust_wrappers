@@ -25,7 +25,10 @@ cargo build
 
 Run tests with `cargo test`.
 
-If you want code coverage, you can use [kcov](https://github.com/SimonKagstrom/kcov) via `cargo test --no-run && kcov --exclude-pattern=/.cargo target/cov target/debug/mixer_wrappers-*`.
+If you want code coverage, you can use [kcov](https://github.com/SimonKagstrom/kcov) via
+`cargo test --no-run && kcov --exclude-pattern=/.cargo target/cov target/debug/mixer_wrappers-*`.
+
+This doesn't work well on CI, so there's no badge.
 
 ## Using
 
@@ -62,17 +65,31 @@ The `query` function returns a Result, so be sure to handle that appropriately.
 
 ### Constellation
 
-This is the more interesting part of the library. This wrapper makes it easy to listen to and send messages to the real-time API. Start with
+This wrapper makes it easy to listen to and send messages to the real-time API. Start with
 
 ```rust
-use mixer_wrappers::connect;
+use mixer_wrappers::ConstellationClient;
 
-let (mut client, receiver) = connect("your_client_id_here").unwrap();
+let (mut client, receiver) = ConstellationClient::connect("your_client_id_here").unwrap();
 ```
 
-Note that the `connect` method returns a Result, as expected.
+Note that the `connect` method returns a Result.
 
-You can see a full example of what do do with these variables in the docs.
+You can see a more full example of what do do with these variables in the docs.
+
+### Chat
+
+This wrapper makes it easy to listen to and send messages to the chat server. Start with
+
+```rust
+use mixer_wrappers::Chat;
+
+let (mut client, receiver) = Chat::connect("your_client_id_here").unwrap();
+```
+
+Note that the `connect` method returns a Result.
+
+You can see a more full example of what do do with these variables in the docs.
 
 ## Examples
 
@@ -91,4 +108,5 @@ Licensed under either of
 
 Please feel free to contribute. Please open an issue first (or comment on an existing one) so that I know that you want to add/change something.
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license,
+shall be dual licensed as above, without any additional terms or conditions.
