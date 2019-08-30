@@ -1,0 +1,15 @@
+[package]
+name = "mixer_wrapper_examples"
+version = "1.0.0"
+authors = ["You <name@somewhere.com>"]
+edition = "2018"
+
+[dependencies]
+failure = "0.1.5"
+log = "0.4.8"
+log4rs = "0.8.3"
+mixer_wrappers = "0.6.0"
+reqwest = "0.9.20"
+serde = "1.0.99"
+serde_derive = "1.0.99"
+serde_json = "1.0.40"

@@ -74,6 +74,12 @@ Note that the `connect` method returns a Result, as expected.
 
 You can see a full example of what do do with these variables in the docs.
 
+## Examples
+
+There are examples of each methods use in the documentation. For something a little more complete, look at the doc comments on the methods in the code.
+
+For complete examples, see the `./examples` directory.
+
 ## License
 
 Licensed under either of
