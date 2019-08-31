@@ -1,12 +1,18 @@
 use oauth2::{Config, Token, TokenError};
 
+/// Wrapper for Mixer's [shortcode] auth.
+///
+/// [shortcode]: https://dev.mixer.com/reference/oauth/shortcodeauth
+pub mod shortcode;
+
 /// Get the endpoint for authorizing a user.
 ///
 /// https://dev.mixer.com/reference/oauth/quickdetails
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,ignore
+/// # use mixer_wrappers::oauth::get_endpoint_auth;
 /// let url = get_endpoint_auth();
 /// ```
 fn get_endpoint_auth() -> String {
@@ -22,7 +28,8 @@ fn get_endpoint_auth() -> String {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,ignore
+/// # use mixer_wrappers::oauth::get_endpoint_token;
 /// let url = get_endpoint_token();
 /// ```
 fn get_endpoint_token() -> String {
@@ -115,8 +122,6 @@ pub fn get_token_from_code(
     let config = init(client_id, client_secret, scopes, redirect_url);
     config.exchange_code(code)
 }
-
-// TODO shortcode auth https://dev.mixer.com/reference/oauth/shortcodeauth
 
 #[cfg(test)]
 mod tests {
