@@ -79,12 +79,19 @@ You can see a more full example of what do do with these variables in the docs.
 
 ### Chat
 
-This wrapper makes it easy to listen to and send messages to the chat server. Start with
+This wrapper makes it easy to listen to and send messages to the chat server. Since the chat server
+doesn't have a specific, constant endpoint, connecting is a bit more involved.
+
+Start with
 
 ```rust
-use mixer_wrappers::Chat;
+use mixer_wrappers::{ChatClient, REST};
 
-let (mut client, receiver) = Chat::connect("your_client_id_here").unwrap();
+let api = REST::new(&client_id);
+let chat_helper = api.chat_helper();
+let channel_id = chat_helper.get_channel_id("your_username_here").unwrap();
+let endpoints = chat_helper.get_servers(channel_id).unwrap();
+let (mut client, receiver) = Chat::connect(endpoints[0], "your_client_id_here").unwrap();
 ```
 
 Note that the `connect` method returns a Result.

@@ -19,11 +19,11 @@ fn main() {
     let channel_id = chat_helper
         .get_channel_id(USERNAME)
         .expect("Couldn't get channel id");
-    let endpoint = chat_helper
+    let endpoints = chat_helper
         .get_servers(channel_id)
         .expect("Couldn't get chat server");
     let (mut client, receiver) =
-        ChatClient::connect(&endpoint[0], &client_id).expect("Could not connect to chat");
+        ChatClient::connect(&endpoints[0], &client_id).expect("Could not connect to chat");
     debug!("Authenticating");
     client
         .authenticate(channel_id, None, None)
