@@ -95,7 +95,7 @@ impl TryFrom<Value> for Reply {
 
 #[cfg(test)]
 mod tests {
-    use super::{Event, Reply};
+    use super::{Event, MixerError, Reply};
     use serde_json::{json, Value};
     use std::{collections::HashMap, convert::TryFrom};
 
@@ -158,5 +158,14 @@ mod tests {
         assert_eq!(None, reply.error);
 
         assert_eq!(text, serde_json::to_string(&reply).unwrap());
+    }
+
+    #[test]
+    fn test_mixer_error() {
+        let err = MixerError {
+            id: 100,
+            message: "".to_owned(),
+        };
+        let _ = format!("{:?}", err);
     }
 }
