@@ -109,7 +109,9 @@ impl ChatClient {
                 id: self.client.method_counter.inc(),
             }
         };
-        self.client.socket_out.send(serde_json::to_string(&method)?)?;
+        self.client
+            .socket_out
+            .send(serde_json::to_string(&method)?)?;
         Ok(())
     }
 
