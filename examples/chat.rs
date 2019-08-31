@@ -12,7 +12,6 @@ fn get_client_id() -> String {
 }
 
 fn main() {
-    log4rs::init_file("log4rs.yml", Default::default()).unwrap();
     let client_id = get_client_id();
     let api = REST::new(&client_id);
     let chat_helper = api.chat_helper();

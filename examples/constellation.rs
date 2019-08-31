@@ -28,7 +28,6 @@ fn get_channel_id(client_id: &str, username: &str) -> Result<usize, Error> {
 }
 
 fn main() {
-    log4rs::init_file("log4rs.yml", Default::default()).unwrap();
     let client_id = get_client_id();
     let channel_id = get_channel_id(&client_id, USERNAME).unwrap();
 
