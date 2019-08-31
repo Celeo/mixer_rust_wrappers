@@ -38,6 +38,4 @@ version = "0.9.0"
 features = ["ssl"]
 
 [dev-dependencies]
-cfg-if = "0.1.9"
-mockall = "0.4.0"
 mockito = "0.17.1"
