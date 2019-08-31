@@ -19,10 +19,6 @@ exclude = [
 circle-ci = { repository = "https://github.com/Celeo/mixer_rust_wrappers", branch = "master" }
 maintenance = { status = "actively-developed" }
 
-[lib]
-name = "mixer_wrappers"
-path = "src/lib.rs"
-
 [dependencies]
 atomic-counter = "1.0.1"
 failure = "0.1.5"
@@ -42,5 +38,6 @@ version = "0.9.0"
 features = ["ssl"]
 
 [dev-dependencies]
-log4rs = "0.8.3"
+cfg-if = "0.1.9"
+mockall = "0.4.0"
 mockito = "0.17.1"

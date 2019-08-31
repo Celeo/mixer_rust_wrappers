@@ -14,4 +14,12 @@ mod tests {
         let err = BadHttpResponseError(400);
         let _ = format!("{}", err);
     }
+
+    #[test]
+    fn has_partial_eq() {
+        let err1 = BadHttpResponseError(400);
+        let err2 = BadHttpResponseError(400);
+
+        assert_eq!(err1, err2);
+    }
 }

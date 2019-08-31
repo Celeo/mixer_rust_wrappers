@@ -26,7 +26,7 @@ cargo build
 Run tests with `cargo test`.
 
 If you want code coverage, you can use [kcov](https://github.com/SimonKagstrom/kcov) via
-`cargo test --no-run && kcov --exclude-pattern=/.cargo target/cov target/debug/mixer_wrappers-*`.
+`cargo test --no-run && rm -rf target/cov && kcov --exclude-pattern=/.cargo target/cov target/debug/$(ls -t target/debug | grep mixer_wrappers- | grep -ve '\.d$' | head -1)`.
 
 This doesn't work well on CI, so there's no badge.
 

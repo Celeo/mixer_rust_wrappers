@@ -172,3 +172,6 @@ impl ConstellationClient {
         Err(format_err!("Unknown type '{}'", type_))
     }
 }
+
+#[cfg(test)]
+mod tests {}
