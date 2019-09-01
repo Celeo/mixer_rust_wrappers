@@ -1,21 +1,36 @@
 use oauth2::{Config, Token, TokenError};
+use reqwest::Client;
+use serde_derive::Deserialize;
+use serde_json::{json, Value};
 
-/// Wrapper for Mixer's [shortcode] auth.
-///
-/// [shortcode]: https://dev.mixer.com/reference/oauth/shortcodeauth
-pub mod shortcode;
+/// Struct around the response from fetching an auth shortcode.
+#[derive(Debug, Deserialize)]
+pub struct ShortcodeResponse {
+    /// Code that the user being authenticated needs to enter
+    pub code: String,
+    /// Expiration time in seconds
+    pub expires_in: u64,
+    /// Handle string to check on the user's authentication status
+    pub handle: String,
+}
+
+/// Status of a shortcode auth flow.
+#[derive(Debug, PartialEq)]
+pub enum ShortcodeStatus {
+    /// HTTP 204 - user hasn't entered the code yet
+    WaitingOnUser,
+    /// HTTP 403 - user chose not to authenticate
+    UserDeniedAccess,
+    /// HTTP 404 - handle is invalid or expired
+    HandleInvalid,
+    /// HTTP 202 - user completed the authentication
+    UserGrantedAccess(String),
+}
 
 /// Get the endpoint for authorizing a user.
 ///
 /// https://dev.mixer.com/reference/oauth/quickdetails
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// # use mixer_wrappers::oauth::get_endpoint_auth;
-/// let url = get_endpoint_auth();
-/// ```
-fn get_endpoint_auth() -> String {
+fn get_endpoint_auth_url() -> String {
     #[cfg(not(test))]
     return "https://mixer.com/oauth/authorize".to_owned();
     #[cfg(test)]
@@ -25,16 +40,36 @@ fn get_endpoint_auth() -> String {
 /// Get the endpoint for exchanging the code for a token.
 ///
 /// https://dev.mixer.com/reference/oauth/quickdetails
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// # use mixer_wrappers::oauth::get_endpoint_token;
-/// let url = get_endpoint_token();
-/// ```
-fn get_endpoint_token() -> String {
+fn get_endpoint_token_url() -> String {
     #[cfg(not(test))]
     return "https://mixer.com/api/v1/oauth/token".to_owned();
+    #[cfg(test)]
+    return mockito::server_url();
+}
+
+/// Get the endpoint for creating a shortcode.
+///
+/// https://dev.mixer.com/reference/oauth/shortcodeauth#shortcode-flow-specification
+fn get_shortcode_url_start() -> String {
+    #[cfg(not(test))]
+    return "https://mixer.com/api/v1/oauth/shortcode ".to_owned();
+    #[cfg(test)]
+    return mockito::server_url();
+}
+
+/// Get the endpoint for creating a shortcode.
+///
+/// https://dev.mixer.com/reference/oauth/shortcodeauth#shortcode-flow-specification
+///
+/// # Arguments
+///
+/// * `_handle` - handle from the initial shortcode response
+fn get_shortcode_url_check(_handle: &str) -> String {
+    #[cfg(not(test))]
+    return format!(
+        "{}{}",
+        "https://mixer.com/api/v1/oauth/shortcode/check/", _handle
+    );
     #[cfg(test)]
     return mockito::server_url();
 }
@@ -51,8 +86,8 @@ fn init(client_id: &str, client_secret: &str, scopes: &[&str], redirect_url: &st
     let mut config = Config::new(
         client_id,
         client_secret,
-        get_endpoint_auth(),
-        get_endpoint_token(),
+        get_endpoint_auth_url(),
+        get_endpoint_token_url(),
     );
     for scope in scopes {
         config = config.add_scope((*scope).to_owned());
@@ -123,9 +158,99 @@ pub fn get_token_from_code(
     config.exchange_code(code)
 }
 
+/// Get an authentication shortcode.
+///
+/// This is used for completing the OAuth flow for a user without supplying a redirect URL
+/// for them to land on after authenticating, or when "for scenarios where it is difficult to
+/// embed a browser or require the user to give keyboard input" [docs].
+///
+/// Once the application receives the response, the `code` field needs to be given to the user,
+/// who needs to enter it into https://mixer.com/go. The application needs to monitor whether
+/// or not the user has done so via making repeated API calls to another method, wrapped in
+/// this library by the `check_shortcode` function below.
+///
+/// # Arguments
+///
+/// * `client_id` - your OAuth application id
+/// * `client_secret` - your OAuth application secret
+/// * `scopes` - your desired OAuth scopes
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// # use mixer_wrappers::oauth::get_shortcode;
+/// let shortcode = get_shortcode("aaa", "bbb", &["s_1", "s_2", "s_3"]).unwrap();
+/// ```
+///
+/// [docs]: https://dev.mixer.com/reference/oauth/shortcodeauth
+pub fn get_shortcode(
+    client_id: &str,
+    client_secret: &str,
+    scopes: &[&str],
+) -> Result<ShortcodeResponse, failure::Error> {
+    let client = Client::new();
+    let json = json!({
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": scopes.join(" "),
+    });
+    let mut resp = client.post(&get_shortcode_url_start()).json(&json).send()?;
+    let data: ShortcodeResponse = resp.json()?;
+    Ok(data)
+}
+
+/// Check on the status of a shortcode.
+///
+/// This method returns an enum value representing the current state of the code
+/// by making a single call to the Mixer API with the handle.
+///
+/// Application authors will need to call this method repeatedly, waiting on the
+/// user to visit the site, enter the code, and confirm authentication. This is
+/// intended to be done with threads, but if your application *must* wait for the
+/// user to complete the authentication flow before proceeding, it can just loop
+/// calling and sleeping.
+///
+/// # Arguments
+///
+/// * `handle` - the handle received from starting the shortcode flow; this
+///              is not the code that's sent to the user
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// # use mixer_wrappers::oauth::{check_shortcode, ShortcodeStatus};
+/// # use std::{thread, time::Duration};
+/// loop {
+///     let status = check_shortcode("abc123");
+///     let code: String = match status {
+///         ShortcodeStatus::UserGrantedAccess(ref c) => c.to_owned(),
+///         _ => continue,
+///     };
+///     // ...
+/// }
+/// ```
+pub fn check_shortcode(handle: &str) -> ShortcodeStatus {
+    let mut resp = match reqwest::get(&get_shortcode_url_check(handle)) {
+        Ok(r) => r,
+        Err(_) => return ShortcodeStatus::HandleInvalid,
+    };
+    match resp.status().as_u16() {
+        200 => {
+            let data: Value = resp.json().unwrap();
+            let code = data["code"].as_str().unwrap();
+            ShortcodeStatus::UserGrantedAccess(code.to_owned())
+        }
+        204 => ShortcodeStatus::WaitingOnUser,
+        403 => ShortcodeStatus::UserDeniedAccess,
+        _ => ShortcodeStatus::HandleInvalid,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{get_authorize_url, get_token_from_code};
+    use super::{
+        check_shortcode, get_authorize_url, get_shortcode, get_token_from_code, ShortcodeStatus,
+    };
     use mockito::mock;
 
     const CLIENT_ID: &str = "a";
@@ -158,12 +283,60 @@ mod tests {
             "token_type": "test"
         }"#;
         let _m1 = mock("POST", "/")
-            .with_status(200)
             .with_body(body)
             .with_header("Content-Type", "application/json")
             .create();
         let token =
             get_token_from_code(CLIENT_ID, CLIENT_SECRET, &SCOPES, REDIRECT_URL, "123abc").unwrap();
         assert_eq!("123abc", token.access_token);
+    }
+
+    #[test]
+    fn test_get_shortcode() {
+        let body = r#"{
+            "code": "foo",
+            "expires_in": 120,
+            "handle": "bar"
+        }"#;
+        let _m1 = mock("POST", "/")
+            .with_header("Content-Type", "application/json")
+            .with_body(body)
+            .create();
+        let response = get_shortcode(CLIENT_ID, CLIENT_SECRET, &SCOPES).unwrap();
+        assert_eq!("foo", response.code);
+        assert_eq!(120, response.expires_in);
+        assert_eq!("bar", response.handle);
+    }
+
+    #[test]
+    fn test_check_shortcode_200() {
+        let body = r#"{"code": "foo"}"#;
+        let _m1 = mock("GET", "/")
+            .with_header("Content-Type", "application/json")
+            .with_body(body)
+            .create();
+        let status = check_shortcode("bar");
+        assert_eq!(status, ShortcodeStatus::UserGrantedAccess("foo".to_owned()));
+    }
+
+    #[test]
+    fn test_check_shortcode_204() {
+        let _m1 = mock("GET", "/").with_status(204).create();
+        let status = check_shortcode("bar");
+        assert_eq!(status, ShortcodeStatus::WaitingOnUser);
+    }
+
+    #[test]
+    fn test_check_shortcode_403() {
+        let _m1 = mock("GET", "/").with_status(403).create();
+        let status = check_shortcode("bar");
+        assert_eq!(status, ShortcodeStatus::UserDeniedAccess);
+    }
+
+    #[test]
+    fn test_check_shortcode_404() {
+        let _m1 = mock("GET", "/").with_status(404).create();
+        let status = check_shortcode("bar");
+        assert_eq!(status, ShortcodeStatus::HandleInvalid);
     }
 }

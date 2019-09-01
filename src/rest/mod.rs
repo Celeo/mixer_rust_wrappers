@@ -210,10 +210,7 @@ mod tests {
     #[test]
     fn query_good() {
         let body = "hello world";
-        let _m1 = mock("GET", "/somewhere?foo=bar")
-            .with_status(200)
-            .with_body(body)
-            .create();
+        let _m1 = mock("GET", "/somewhere?foo=bar").with_body(body).create();
         let rest = REST::new("");
         let resp = rest
             .query(
@@ -230,7 +227,6 @@ mod tests {
     fn query_wrong_status() {
         let body = "hello world";
         let _m1 = mock("GET", "/somewhere?hello=world")
-            .with_status(200)
             .with_body(body)
             .create();
         let rest = REST::new("");
