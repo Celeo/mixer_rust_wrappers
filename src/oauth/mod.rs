@@ -10,6 +10,8 @@
 //!
 //! `get_token_from_code` is used for exchanging the code for the token in the normal flow.
 //!
+//! `get_access_token_from_refresh` is used to get another access token from the refresh token.
+//!
 //! `get_shortcode` is used for generating a 6-digit code for the application's user to enter on
 //! Mixer's "shortcode" OAuth flow, which is useful when the application does not contain a web server
 //! to receive the code from the user. This code must be given to the user so that they can enter it
@@ -178,6 +180,38 @@ pub fn get_token_from_code(
     config.exchange_code(code)
 }
 
+/// Exchange a refresh token for another access token.
+///
+/// This is required when the access token from a successful authentication expires -
+/// the refresh token is used to make another authentication request to the API to
+/// get another access token. Only the access token can be use to interact with the
+/// API on the user's behalf.
+///
+/// # Arguments
+///
+/// * `client_id` - your OAuth application id
+/// * `client_secret` - your OAuth application secret
+/// * `scopes` - your desired OAuth scopes
+/// * `redirect_url` - your application's redirect URL
+/// * `refresh_token` - the refresh token from the successful auth
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// # use mixer_wrappers::oauth::get_access_token_from_refresh;
+/// let new_token = get_access_token_from_refresh("aaa", "bbb", &["s_1", "s_2", "s_3"], "ccc", "refresh_token_here").unwrap();
+/// ```
+pub fn get_access_token_from_refresh(
+    client_id: &str,
+    client_secret: &str,
+    scopes: &[&str],
+    redirect_url: &str,
+    refresh_token: &str,
+) -> Result<Token, TokenError> {
+    let config = init(client_id, client_secret, scopes, redirect_url);
+    config.exchange_refresh_token(refresh_token)
+}
+
 /// Get an authentication shortcode.
 ///
 /// This is used for completing the OAuth flow for a user without supplying a redirect URL
@@ -274,7 +308,8 @@ pub fn check_shortcode(handle: &str) -> ShortcodeStatus {
 #[cfg(test)]
 mod tests {
     use super::{
-        check_shortcode, get_authorize_url, get_shortcode, get_token_from_code, ShortcodeStatus,
+        check_shortcode, get_access_token_from_refresh, get_authorize_url, get_shortcode,
+        get_token_from_code, ShortcodeStatus,
     };
     use mockito::mock;
 
@@ -313,6 +348,28 @@ mod tests {
             .create();
         let token =
             get_token_from_code(CLIENT_ID, CLIENT_SECRET, &SCOPES, REDIRECT_URL, "123abc").unwrap();
+        assert_eq!("123abc", token.access_token);
+    }
+
+    #[test]
+    fn test_get_access_token_from_refresh() {
+        let body = r#"{
+            "access_token": "123abc",
+            "expires_in": 3600,
+            "token_type": "test"
+        }"#;
+        let _m1 = mock("POST", "/")
+            .with_body(body)
+            .with_header("Content-Type", "application/json")
+            .create();
+        let token = get_access_token_from_refresh(
+            CLIENT_ID,
+            CLIENT_SECRET,
+            &SCOPES,
+            REDIRECT_URL,
+            "123abc",
+        )
+        .unwrap();
         assert_eq!("123abc", token.access_token);
     }
 
