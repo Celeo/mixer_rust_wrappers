@@ -57,7 +57,7 @@ Send API requests with
 ```rust
 use reqwest::Method;
 
-let resp_text = client.query(Method::GET, "some/endpoint", None, None).unwrap();
+let resp_text = client.query("GET", "some/endpoint", None, None).unwrap();
 ```
 
 The `query` function returns a Result, so be sure to handle that appropriately.

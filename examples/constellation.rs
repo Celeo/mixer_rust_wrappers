@@ -7,9 +7,10 @@ use std::{thread, time::Duration};
 fn get_channel_id(client_id: &str, username: &str) -> Result<usize, Error> {
     let rest = REST::new(client_id);
     let text = rest.query(
-        reqwest::Method::GET,
+        "GET",
         &format!("channels/{}", username),
         Some(&[("fields", "id")]),
+        None,
         None,
     )?;
     let json: Value = serde_json::from_str(&text)?;

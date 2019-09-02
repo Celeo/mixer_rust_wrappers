@@ -7,14 +7,19 @@
 //! providing several handy methods for getting information about the chat server endpoint(s),
 //! required for [connecting to chat].
 //!
+//! Some endpoints require OAuth. You can utilize this crate's [oauth module] for getting
+//! an access token from users.
+//!
 //! [connecting to chat]: ../chat/struct.ChatClient.html#method.connect
+//! [oauth module]: ../oauth
 
 /// Error handling
 pub mod errors;
 
 use failure::Error;
+use log::debug;
 use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue},
+    header::{self, HeaderMap, HeaderName, HeaderValue},
     Client, Method,
 };
 use std::time::Duration;
@@ -63,17 +68,22 @@ impl REST {
 
     /// Build the required API headers.
     ///
-    /// # Examples
+    /// # Arguments
     ///
-    /// ```rust,ignore
-    /// let headers = self.headers();
-    /// ```
-    fn headers(&self) -> HeaderMap {
+    /// * `access_token` - optional OAuth token
+    fn headers(&self, access_token: Option<&str>) -> HeaderMap {
         let mut map = HeaderMap::new();
         map.insert(
             HeaderName::from_static("client-id"),
             HeaderValue::from_bytes(self.client_id.as_bytes()).unwrap(),
         );
+        if access_token.is_some() {
+            map.insert(
+                header::AUTHORIZATION,
+                HeaderValue::from_bytes(format!("Bearer {}", access_token.unwrap()).as_bytes())
+                    .unwrap(),
+            );
+        }
         map
     }
 
@@ -85,27 +95,30 @@ impl REST {
     /// * `endpoint` - API endpoint (do not include the API base URL)
     /// * `params` - query params to include (if none, just send `&[]`)
     /// * `body` - optional HTTP body String
+    /// * `access_token` - optional OAuth token
     ///
     /// # Examples
     ///
     /// ```rust,no_run
     /// # use mixer_wrappers::REST;
-    /// # use reqwest::Method;
     /// let api = REST::new("");
-    /// let text = api.query(Method::GET, "some/endpoint", None, None).unwrap();
+    /// let text = api.query("GET", "some/endpoint", None, None, None).unwrap();
     /// ```
     pub fn query(
         &self,
-        method: Method,
+        method: &str,
         endpoint: &str,
         params: Option<&[(&str, &str)]>,
         body: Option<&str>,
+        access_token: Option<&str>,
     ) -> Result<String, Error> {
-        let endpoint = format!("{}/{}", self.base_url(), endpoint);
+        let url = format!("{}/{}", self.base_url(), endpoint);
+        let method = Method::from_bytes(method.to_uppercase().as_bytes())?;
+        debug!("Making {} call to {}", method, url);
         let mut builder = self
             .client
-            .request(method, &endpoint)
-            .headers(self.headers());
+            .request(method, &url)
+            .headers(self.headers(access_token));
         if params.is_some() {
             builder = builder.query(params.unwrap());
         }
@@ -115,6 +128,11 @@ impl REST {
         let req = builder.build()?;
         let mut resp = self.client.execute(req)?;
         if !resp.status().is_success() {
+            debug!(
+                "Got status code {} from endpoint, text: {}",
+                resp.status().as_str(),
+                resp.text()?
+            );
             return Err(BadHttpResponseError(resp.status().as_u16()).into());
         }
         let text = resp.text()?;
@@ -160,8 +178,9 @@ impl<'a> ChatHelper<'a> {
     /// ```
     pub fn get_channel_id(&self, username: &str) -> Result<usize, Error> {
         let text = self.rest.query(
-            Method::GET,
+            "GET",
             &format!("channels/{}?fields=id", username),
+            None,
             None,
             None,
         )?;
@@ -189,7 +208,7 @@ impl<'a> ChatHelper<'a> {
     pub fn get_servers(&self, channel_id: usize) -> Result<Vec<String>, Error> {
         let text = self
             .rest
-            .query(Method::GET, &format!("chats/{}", channel_id), None, None)?;
+            .query("GET", &format!("chats/{}", channel_id), None, None, None)?;
         let json: serde_json::Value = serde_json::from_str(&text)?;
         let endpoints: Vec<String> = json["endpoints"]
             .as_array()
@@ -205,12 +224,11 @@ impl<'a> ChatHelper<'a> {
 mod tests {
     use super::REST;
     use mockito::mock;
-    use reqwest::Method;
 
     #[test]
     fn headers() {
         let rest = REST::new("foobar");
-        let headers = rest.headers();
+        let headers = rest.headers(None);
         assert_eq!(1, headers.len());
         assert_eq!(
             "foobar",
@@ -225,10 +243,11 @@ mod tests {
         let rest = REST::new("");
         let resp = rest
             .query(
-                Method::GET,
+                "GET",
                 "somewhere",
                 Some(&[("foo", "bar")]),
                 Some("hello world"),
+                None,
             )
             .unwrap();
         assert_eq!(body, resp);
@@ -241,7 +260,7 @@ mod tests {
             .with_body(body)
             .create();
         let rest = REST::new("");
-        let resp = rest.query(Method::GET, "somewhere", Some(&[("foo", "bar")]), None);
+        let resp = rest.query("GET", "somewhere", Some(&[("foo", "bar")]), None, None);
         assert_eq!(true, resp.is_err());
         let _ = resp.unwrap_err();
     }
