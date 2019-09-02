@@ -241,12 +241,17 @@ pub fn get_shortcode(
 /// # use mixer_wrappers::oauth::{check_shortcode, ShortcodeStatus};
 /// # use std::{thread, time::Duration};
 /// loop {
-///     let status = check_shortcode("abc123");
+///     let status = check_shortcode("some_handle");
 ///     let code: String = match status {
 ///         ShortcodeStatus::UserGrantedAccess(ref c) => c.to_owned(),
-///         _ => continue,
+///         ShortcodeStatus::UserDeniedAccess => break,
+///         ShortcodeStatus::HandleInvalid => break,
+///         _ => {
+///             thread::sleep(Duration::from_secs(3));
+///             continue;
+///         }
 ///     };
-///     // ...
+///     break;
 /// }
 /// ```
 pub fn check_shortcode(handle: &str) -> ShortcodeStatus {
