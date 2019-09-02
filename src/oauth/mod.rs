@@ -89,10 +89,7 @@ fn get_shortcode_url_start() -> String {
 /// * `_handle` - handle from the initial shortcode response
 fn get_shortcode_url_check(_handle: &str) -> String {
     #[cfg(not(test))]
-    return format!(
-        "{}{}",
-        "https://mixer.com/api/v1/oauth/shortcode/check/", _handle
-    );
+    return format!("https://mixer.com/api/v1/oauth/shortcode/check/{}", _handle);
     #[cfg(test)]
     return mockito::server_url();
 }

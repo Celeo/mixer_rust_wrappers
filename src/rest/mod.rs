@@ -321,7 +321,7 @@ mod tests {
                 "somewhere",
                 Some(&[("foo", "bar")]),
                 Some("hello world"),
-                None,
+                Some("the_token"),
             )
             .unwrap();
         assert_eq!(body, resp);
