@@ -2,27 +2,18 @@ use log::{debug, info};
 use mixer_wrappers::{ChatClient, REST};
 use std::thread;
 
-const USERNAME: &str = "YOUR_USERNAME";
-
-fn get_client_id() -> String {
-    std::fs::read_to_string("client_id")
-        .unwrap()
-        .trim()
-        .to_owned()
-}
-
 fn main() {
-    let client_id = get_client_id();
-    let api = REST::new(&client_id);
+    let client_id = "CLIENT_ID_HERE";
+    let api = REST::new(client_id);
     let chat_helper = api.chat_helper();
     let channel_id = chat_helper
-        .get_channel_id(USERNAME)
+        .get_channel_id("CHANNEL_NAME_HERE")
         .expect("Couldn't get channel id");
     let endpoints = chat_helper
         .get_servers(channel_id)
         .expect("Couldn't get chat server");
     let (mut client, receiver) =
-        ChatClient::connect(&endpoints[0], &client_id).expect("Could not connect to chat");
+        ChatClient::connect(&endpoints[0], client_id).expect("Could not connect to chat");
     debug!("Authenticating");
     client
         .authenticate(channel_id, None, None)
