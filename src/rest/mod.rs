@@ -7,6 +7,10 @@
 //! providing several handy methods for getting information about the chat server endpoint(s),
 //! required for [connecting to chat].
 //!
+//! The `WebHookHelper` struct can be constructed through an instance of the `REST` struct,
+//! providing several handy methods for registering webhooks, as the HTTP call to do so
+//! differs from the rest of the API endpoints.
+//!
 //! Some endpoints require OAuth. You can utilize this crate's [oauth module] for getting
 //! an access token from users.
 //!
