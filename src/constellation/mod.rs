@@ -1,3 +1,9 @@
+//! Wrapper for the Constellation endpoint.
+//!
+//! See the documentation on the [ConstellationClient] struct for where to start.
+//!
+//! [ConstellationClient]: struct.ConstellationClient.html
+
 /// Static models for the JSON data
 pub mod models;
 

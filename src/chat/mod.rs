@@ -1,3 +1,9 @@
+//! Wrapper for the chat endpoint.
+//!
+//! See the documentation on the [ChatClient] struct for where to start.
+//!
+//! [ChatClient]: struct.ChatClient.html
+
 /// Static models for JSON data
 pub mod models;
 

@@ -1,3 +1,14 @@
+//! Wrapper around Mixer's REST API.
+//!
+//! This module contains a struct, `REST` that is contains various helper
+//! functions for making calls out to the API and processing the responses.
+//!
+//! The `ChatHelper` struct can be constructed through an instance of the `REST` struct,
+//! providing several handy methods for getting information about the chat server endpoint(s),
+//! required for [connecting to chat].
+//!
+//! [connecting to chat]: ../chat/struct.ChatClient.html#method.connect
+
 /// Error handling
 pub mod errors;
 

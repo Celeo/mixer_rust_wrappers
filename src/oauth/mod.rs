@@ -1,3 +1,23 @@
+//! Wrappers around OAuth calls for authenticating the user
+//! interacting with your application.
+//!
+//! This module does not contain any structs; instead, import methods individually as needed.
+//!
+//! `get_authorize_url` is used to start your application's user on Mixer's standard OAuth flow, where
+//! Mixer has the user authenticate and confirm using the application and then redirects them to the
+//! configured redirect URL, where a web server needs to be running to take the code from the user
+//! and exchange it for the OAuth token.
+//!
+//! `get_token_from_code` is used for exchanging the code for the token in the normal flow.
+//!
+//! `get_shortcode` is used for generating a 6-digit code for the application's user to enter on
+//! Mixer's "shortcode" OAuth flow, which is useful when the application does not contain a web server
+//! to receive the code from the user. This code must be given to the user so that they can enter it
+//! on Mixer's site.
+//!
+//! `check_shortcode ` is used to poll the Mixer API for the status of a user entering (or not entering)
+//! a shortcode.
+
 use oauth2::{Config, Token, TokenError};
 use reqwest::Client;
 use serde_derive::Deserialize;
@@ -167,7 +187,7 @@ pub fn get_token_from_code(
 /// Once the application receives the response, the `code` field needs to be given to the user,
 /// who needs to enter it into https://mixer.com/go. The application needs to monitor whether
 /// or not the user has done so via making repeated API calls to another method, wrapped in
-/// this library by the `check_shortcode` function below.
+/// this library by the `check_shortcode` function.
 ///
 /// # Arguments
 ///
