@@ -22,6 +22,7 @@ use reqwest::{
     header::{self, HeaderMap, HeaderName, HeaderValue},
     Client, Method,
 };
+use serde_json::json;
 use std::time::Duration;
 
 use errors::BadHttpResponseError;
@@ -145,12 +146,24 @@ impl REST {
     ///
     /// ```rust,no_run
     /// # use mixer_wrappers::REST;
-    /// # use reqwest::Method;
     /// let api = REST::new("");
     /// let helper = api.chat_helper();
     /// ```
     pub fn chat_helper(&self) -> ChatHelper {
         ChatHelper { rest: self }
+    }
+
+    /// Get a struct with several WebHook-related endpoint helpers.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use mixer_wrappers::REST;
+    /// let api = REST::new("");
+    /// let helper = api.webhook_helper();
+    /// ```
+    pub fn webhook_helper(&self) -> WebHookHelper {
+        WebHookHelper { rest: self }
     }
 }
 
@@ -220,6 +233,63 @@ impl<'a> ChatHelper<'a> {
     }
 }
 
+/// Helper for webhook-related REST API endpoints.
+pub struct WebHookHelper<'a> {
+    rest: &'a REST,
+}
+
+impl<'a> WebHookHelper<'a> {
+    /// Register webhooks.
+    ///
+    /// See the [documentation] for more information.
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - list of events to receive
+    /// * `url` - URL to receive the call at
+    /// * `client_secret` - your OAuth app's client_secret
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use mixer_wrappers::rest::{WebHookHelper, REST};
+    /// # let api = REST::new("");
+    /// let helper = api.webhook_helper();
+    /// let channel_id = helper.register(&["event_1", "event_2"], "http://example.com/callback", "your_client_secret").unwrap();
+    /// ```
+    ///
+    /// [documentation]: https://dev.mixer.com/reference/webhooks
+    pub fn register(&self, events: &[&str], url: &str, client_secret: &str) -> Result<(), Error> {
+        // This request has to be constructed explicitly here, as it doesn't share many
+        // similarities with the normal API requests, namely the headers.
+        debug!(
+            "Making webhook register call with events: {}",
+            events.join(", ")
+        );
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            HeaderName::from_static("client-id"),
+            HeaderValue::from_bytes(self.rest.client_id.as_bytes()).unwrap(),
+        );
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_bytes(format!("Secret {}", client_secret).as_bytes()).unwrap(),
+        );
+        let body = json!({
+            "events": events,
+            "kind": "web",
+            "url": url,
+        });
+        self.rest
+            .client
+            .post(&format!("{}/hooks", self.rest.base_url()))
+            .headers(headers)
+            .body(serde_json::to_string(&body).unwrap())
+            .send()?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::REST;
@@ -263,5 +333,19 @@ mod tests {
         let resp = rest.query("GET", "somewhere", Some(&[("foo", "bar")]), None, None);
         assert_eq!(true, resp.is_err());
         let _ = resp.unwrap_err();
+    }
+
+    #[test]
+    fn test_webhook_helper() {
+        let _m1 = mock("POST", "/hook").create();
+        let rest = REST::new("");
+        let helper = rest.webhook_helper();
+        helper
+            .register(
+                &["event_1", "event_2"],
+                "http://example.com/callback",
+                "aaaaaa",
+            )
+            .unwrap();
     }
 }
