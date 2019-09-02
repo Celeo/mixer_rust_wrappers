@@ -17,7 +17,7 @@
 //! to receive the code from the user. This code must be given to the user so that they can enter it
 //! on Mixer's site.
 //!
-//! `check_shortcode ` is used to poll the Mixer API for the status of a user entering (or not entering)
+//! `check_shortcode` is used to poll the Mixer API for the status of a user entering (or not entering)
 //! a shortcode.
 
 use oauth2::{Config, Token, TokenError};
