@@ -20,6 +20,7 @@
 //! `check_shortcode` is used to poll the Mixer API for the status of a user entering (or not entering)
 //! a shortcode.
 
+use log::debug;
 use oauth2::{Config, Token, TokenError};
 use reqwest::Client;
 use serde_derive::Deserialize;
@@ -249,7 +250,9 @@ pub fn get_shortcode(
         "scope": scopes.join(" "),
     });
     let mut resp = client.post(&get_shortcode_url_start()).json(&json).send()?;
-    let data: ShortcodeResponse = resp.json()?;
+    let text = resp.text()?;
+    debug!("Shortcode generation response: {}", text);
+    let data: ShortcodeResponse = serde_json::from_str(&text)?;
     Ok(data)
 }
 
