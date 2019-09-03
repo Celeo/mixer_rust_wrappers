@@ -33,7 +33,7 @@ This doesn't work well on CI, so there's no badge.
 
 Add the [most recent version](https://crates.io/crates/mixer_wrappers) to your Cargo.toml and build.
 
-This library is split into 2 parts: a tiny convenience wrapper for the REST API, and a wrapper for the Constellation real-time API.
+This library is split into several parts: a tiny convenience wrapper for the REST API, and a wrapper for the Constellation real-time API.
 
 ### REST
 
