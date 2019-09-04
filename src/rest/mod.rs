@@ -17,8 +17,9 @@
 //! [connecting to chat]: ../chat/struct.ChatClient.html#method.connect
 //! [oauth module]: ../oauth
 
-/// Error handling
+pub mod chat_helper;
 pub mod errors;
+pub mod webhook_helper;
 
 use failure::Error;
 use log::debug;
@@ -26,10 +27,11 @@ use reqwest::{
     header::{self, HeaderMap, HeaderName, HeaderValue},
     Client, Method,
 };
-use serde_json::json;
 use std::time::Duration;
 
+use chat_helper::ChatHelper;
 use errors::BadHttpResponseError;
+use webhook_helper::WebHookHelper;
 
 const TIMEOUT: u64 = 10;
 
@@ -171,129 +173,6 @@ impl REST {
     }
 }
 
-/// Helper for chat-related REST API endpoints.
-pub struct ChatHelper<'a> {
-    rest: &'a REST,
-}
-
-impl<'a> ChatHelper<'a> {
-    /// Get the channel ID for a username.
-    ///
-    /// See docs for more information: https://dev.mixer.com/reference/chat/connection#connection
-    ///
-    /// # Arguments
-    ///
-    /// * `username` - username to look up
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// # use mixer_wrappers::rest::{ChatHelper, REST};
-    /// # let api = REST::new("");
-    /// let helper = api.chat_helper();
-    /// let channel_id = helper.get_channel_id("some_username");
-    /// ```
-    pub fn get_channel_id(&self, username: &str) -> Result<usize, Error> {
-        let text = self.rest.query(
-            "GET",
-            &format!("channels/{}?fields=id", username),
-            None,
-            None,
-            None,
-        )?;
-        let json: serde_json::Value = serde_json::from_str(&text)?;
-        let channel_id = json["id"].as_u64().unwrap() as usize;
-        Ok(channel_id)
-    }
-
-    /// Gets a list of chat servers to connect to for the channel ID.
-    ///
-    /// See docs for more information: https://dev.mixer.com/reference/chat/connection#connection
-    ///
-    /// # Arguments
-    ///
-    /// * `channel_id` - channel ID to connect to
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// # use mixer_wrappers::rest::{ChatHelper, REST};
-    /// # let api = REST::new("");
-    /// let helper = api.chat_helper();
-    /// let servers = helper.get_servers(1234567890);
-    /// ```
-    pub fn get_servers(&self, channel_id: usize) -> Result<Vec<String>, Error> {
-        let text = self
-            .rest
-            .query("GET", &format!("chats/{}", channel_id), None, None, None)?;
-        let json: serde_json::Value = serde_json::from_str(&text)?;
-        let endpoints: Vec<String> = json["endpoints"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|e| e.as_str().unwrap().to_owned())
-            .collect();
-        Ok(endpoints)
-    }
-}
-
-/// Helper for webhook-related REST API endpoints.
-pub struct WebHookHelper<'a> {
-    rest: &'a REST,
-}
-
-impl<'a> WebHookHelper<'a> {
-    /// Register webhooks.
-    ///
-    /// See the [documentation] for more information.
-    ///
-    /// # Arguments
-    ///
-    /// * `events` - list of events to receive
-    /// * `url` - URL to receive the call at
-    /// * `client_secret` - your OAuth app's client_secret
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// # use mixer_wrappers::rest::{WebHookHelper, REST};
-    /// # let api = REST::new("");
-    /// let helper = api.webhook_helper();
-    /// let channel_id = helper.register(&["event_1", "event_2"], "http://example.com/callback", "your_client_secret").unwrap();
-    /// ```
-    ///
-    /// [documentation]: https://dev.mixer.com/reference/webhooks
-    pub fn register(&self, events: &[&str], url: &str, client_secret: &str) -> Result<(), Error> {
-        // This request has to be constructed explicitly here, as it doesn't share many
-        // similarities with the normal API requests, namely the headers.
-        debug!(
-            "Making webhook register call with events: {}",
-            events.join(", ")
-        );
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            HeaderName::from_static("client-id"),
-            HeaderValue::from_bytes(self.rest.client_id.as_bytes()).unwrap(),
-        );
-        headers.insert(
-            header::AUTHORIZATION,
-            HeaderValue::from_bytes(format!("Secret {}", client_secret).as_bytes()).unwrap(),
-        );
-        let body = json!({
-            "events": events,
-            "kind": "web",
-            "url": url,
-        });
-        self.rest
-            .client
-            .post(&format!("{}/hooks", self.rest.base_url()))
-            .headers(headers)
-            .body(serde_json::to_string(&body).unwrap())
-            .send()?;
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::REST;
@@ -337,19 +216,5 @@ mod tests {
         let resp = rest.query("GET", "somewhere", Some(&[("foo", "bar")]), None, None);
         assert_eq!(true, resp.is_err());
         let _ = resp.unwrap_err();
-    }
-
-    #[test]
-    fn test_webhook_helper() {
-        let _m1 = mock("POST", "/hook").create();
-        let rest = REST::new("");
-        let helper = rest.webhook_helper();
-        helper
-            .register(
-                &["event_1", "event_2"],
-                "http://example.com/callback",
-                "aaaaaa",
-            )
-            .unwrap();
     }
 }

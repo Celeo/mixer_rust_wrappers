@@ -1,3 +1,5 @@
+//! REST API error handling.
+
 use failure::Fail;
 
 /// Error for receiving a non-20X response from an endpoint.
