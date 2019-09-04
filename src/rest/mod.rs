@@ -135,9 +135,11 @@ impl REST {
         let req = builder.build()?;
         let mut resp = self.client.execute(req)?;
         if !resp.status().is_success() {
+            let headers: Vec<String> = resp.headers().iter().map(|h| format!("{:?}", h)).collect();
             debug!(
-                "Got status code {} from endpoint, text: {}",
+                "Got status code {} from endpoint, headers: {}, text: {}",
                 resp.status().as_str(),
+                headers.join(", "),
                 resp.text()?
             );
             return Err(BadHttpResponseError(resp.status().as_u16()).into());
