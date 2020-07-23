@@ -1,3 +1,5 @@
+**Note**: Mixer has shut down, so this library is useless.
+
 # Mixer Rust Wrappers
 
 [![CircleCI](https://circleci.com/gh/Celeo/mixer_rust_wrappers.svg?style=svg)](https://circleci.com/gh/Celeo/mixer_rust_wrappers)
